@@ -1,0 +1,24 @@
+# Compiled output
+/target/
+
+# Rust/Cargo related files
+**/*.rs.bk
+Cargo.lock
+
+# IDEs and editors
+/.idea/
+/.vscode/
+/*.swp
+*.swo
+*.swn
+
+# Mac-specific files
+.DS_Store
+
+# Otros archivos temporales
+*.tmp
+*.log
+
+playground/
+
+TODO.md
