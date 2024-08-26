@@ -6,8 +6,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    let destination_folder = Path::new("playground/downloads");
-    std::fs::create_dir_all(destination_folder)?;
+    let workspace_path = Path::new("playground");
 
     let multi_progress = MultiProgress::new();
 
@@ -15,14 +14,10 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         MameDataType::all_variants()
             .iter()
             .map(|&data_type| {
-                let label = format!("{:?}", data_type);
                 let progress_bar = multi_progress.add(ProgressBar::new(100));
                 progress_bar.set_style(
                     ProgressStyle::default_bar()
-                        .template(&format!(
-                            "{{spinner:.green}} [{{elapsed_precise}}] [{{bar:40.cyan/blue}}] {{bytes}}/{{total_bytes}} ({{eta}}) {{msg}} {}",
-                            label
-                        ))
+                        .template(&format!("{{spinner:.green}} [{{elapsed_precise}}] [{{bar:20.cyan/blue}}] {{bytes}}/{{total_bytes}} ({{eta}}) {{msg}}"))
                         .progress_chars("#>-"),
                 );
                 (data_type, progress_bar)
@@ -31,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     );
 
     let handles = download_files(
-        destination_folder,
+        workspace_path,
         move |data_type, downloaded, total_size, message: String, callback_type: CallbackType| {
             if let Some((_, progress_bar)) = progress_bars.iter().find(|(dt, _)| *dt == data_type) {
                 match callback_type {

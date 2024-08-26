@@ -1,7 +1,7 @@
 use reqwest::blocking::Client;
 use std::error::Error;
-use std::fs::File;
-use std::io::{Read, Write};
+use std::fs::{self, File};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
@@ -9,79 +9,86 @@ use std::thread;
 use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::data_source_helper::get_data_source;
 
+const DOWNLOAD_PATH: &str = "downloads";
+
 pub enum CallbackType {
     Info,
     Progress,
     Error,
 }
 
-/// Downloads a file for the given MameDataType.
-///
-/// This function initiates the download of a file specified by the `MameDataType`
-/// and saves it to the specified destination folder. The function is a simplified
-/// wrapper around `download_file_callback`, without providing a progress callback.
-///
-/// # Parameters
-/// - `data_type`: The type of data to download, represented by `MameDataType`.
-/// - `destination_folder`: The path where the downloaded file should be saved.
-///
-/// # Returns
-/// A `Result` containing the path to the downloaded file (`PathBuf`) if successful,
-/// or an error (`Box<dyn Error + Send + Sync>`) if the download fails.
-///
-/// # Errors
-/// This function will return an error if the download fails, if the destination
-/// folder cannot be created, or if the file cannot be written.
-///
-/// # Examples
-/// ```
-/// use mame_parser::core::mame_data_types::MameDataType;
-/// use mame_parser::download_file;
-/// use std::path::Path;
-///
-/// let destination_folder = Path::new("downloads");
-/// let result = download_file(MameDataType::NPlayers, destination_folder);
-///
-/// match result {
-///     Ok(path) => println!("File downloaded to: {:?}", path),
-///     Err(e) => eprintln!("Failed to download file: {}", e),
-/// }
-/// ```
+fn ensure_folder_exists(path: &Path) -> io::Result<()> {
+    if !path.exists() {
+        fs::create_dir_all(path)?;
+    }
+    Ok(())
+}
 
 pub fn download_file<F>(
     data_type: MameDataType,
-    destination_folder: &Path,
+    workspace_path: &Path,
     progress_callback: Option<F>,
 ) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
 where
     F: Fn(u64, u64, String, CallbackType) + Send + 'static,
 {
+    // Creates a folder if it does not exist.
+    let destination_folder = workspace_path.join(DOWNLOAD_PATH);
+    let folder_created = ensure_folder_exists(&destination_folder);
+    if let Err(err) = folder_created {
+        return Err(Box::new(err));
+    }
+
+    // Retrieves the details for a given `MameDataType`
     let details = get_data_type_details(data_type);
 
+    // Retrieves the URL for the data type.
     if let Some(ref callback) = progress_callback {
-        callback(0, 0, String::from("Searching url"), CallbackType::Info);
+        let message = format!("Searching URL for {}", details.name);
+        callback(0, 0, message, CallbackType::Info);
     }
-
-    let download_url = get_data_source(&details.source, &details.source_match);
-
-    match download_url {
-        Ok(url) => {
-            if let Some(ref callback) = progress_callback {
-                callback(0, 0, String::from("Downloading"), CallbackType::Info);
-            }
-            download(&url, destination_folder, progress_callback)
-        }
+    let download_url = match get_data_source(&details.source, &details.source_match) {
+        Ok(url) => url,
         Err(err) => {
             if let Some(ref callback) = progress_callback {
-                callback(0, 0, String::from("Couldn't find url"), CallbackType::Error);
+                let message = format!("Couldn't find URL for {}", details.name);
+                callback(0, 0, message, CallbackType::Error);
             }
-            Err(err)
+            return Err(err.into());
         }
+    };
+
+    // Checks if the file already exists.
+    let file_name = get_file_name(&download_url);
+    let file_path = destination_folder.join(file_name.clone());
+
+    if let Some(ref callback) = progress_callback {
+        let message = format!("Checking if file {} already exists", file_name.clone());
+        callback(0, 0, message, CallbackType::Info);
     }
+
+    if Path::new(&file_path).exists() {
+        let message = format!("File {} already exists", file_name);
+
+        if let Some(ref callback) = progress_callback {
+            callback(0, 0, message.clone(), CallbackType::Error);
+        }
+        return Err(Box::new(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            message,
+        )));
+    }
+
+    // Downloads the file.
+    if let Some(ref callback) = progress_callback {
+        let message = format!("Downloading {} file", details.name);
+        callback(0, 0, message, CallbackType::Info);
+    }
+    download(&download_url, &destination_folder, progress_callback)
 }
 
 pub fn download_files<F>(
-    destination_folder: &Path,
+    workspace_path: &Path,
     progress_callback: F,
 ) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>>
 where
@@ -92,13 +99,13 @@ where
     MameDataType::all_variants()
         .iter()
         .map(|&data_type| {
-            let destination_folder = destination_folder.to_path_buf();
+            let workspace_path = workspace_path.to_path_buf();
             let progress_callback = Arc::clone(&progress_callback);
 
             thread::spawn(move || {
                 download_file(
                     data_type,
-                    &destination_folder,
+                    &workspace_path,
                     Some(move |downloaded, total_size, message, callback_type| {
                         progress_callback(
                             data_type,
@@ -161,31 +168,6 @@ where
     Ok(file_path)
 }
 
-/// Extracts the file name from a given URL.
-///
-/// The function parses the URL and returns the last segment, which is typically the file name.
-/// If the URL contains a query parameter in the format `?file=name.ext`, it returns the value of that parameter.
-///
-/// /// # Parameters
-/// - `url`: A string slice (`&str`) representing the URL from which the file name should be extracted.
-///
-/// # Returns
-/// Returns a `String` containing the extracted file name from the URL. If no valid file name is found,
-/// it returns an empty string.
-///
-/// # Examples
-/// ```
-/// use mame_parser::core::downloader::file_downloader::get_file_name;
-///
-/// let url = "https://example.com/download?file=example.zip";
-/// let file_name = get_file_name(url);
-/// assert_eq!(file_name, "example.zip");
-///
-/// let url = "https://example.com/files/example.zip";
-/// let file_name = get_file_name(url);
-/// assert_eq!(file_name, "example.zip");
-/// ```
-///
 pub fn get_file_name(url: &str) -> String {
     let last_param = url.split('/').last().unwrap_or("");
     let file_name = last_param.split('=').last().unwrap_or("");

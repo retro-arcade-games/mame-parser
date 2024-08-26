@@ -6,20 +6,18 @@ use std::error::Error;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let destination_folder = Path::new("playground/downloads");
-
-    std::fs::create_dir_all(destination_folder)?;
+    let workspace_path = Path::new("playground");
 
     let progress_bar = ProgressBar::new(100);
     progress_bar.set_style(
         ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta}) {msg}")
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:20.cyan/blue}] {bytes}/{total_bytes} ({eta}) {msg}")
             .progress_chars("#>-"),
     );
 
     let downloaded_file = download_file(
         MameDataType::NPlayers,
-        destination_folder,
+        workspace_path,
         Some(
             move |downloaded, total_size, message: String, callback_type: CallbackType| {
                 match callback_type {
