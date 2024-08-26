@@ -33,6 +33,22 @@ pub struct MameDataTypeDetails {
     // pub read_function: fn(&str) -> Result<(), Box<dyn std::error::Error>>,
 }
 
+/// Get the details of a MameDataType
+/// 
+/// # Parameters
+/// * `data_type` - The MameDataType to get the details for
+/// 
+/// # Returns
+/// The MameDataTypeDetails for the given MameDataType
+/// 
+/// # Examples
+/// ```
+/// use mame_parser::core::mame_data_types::{MameDataType, get_data_type_details};
+/// 
+/// let mame_details = get_data_type_details(MameDataType::Mame);
+/// assert_eq!(mame_details.name, "Mame");
+/// ```
+///
 pub fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDetails {
     match data_type {
         MameDataType::Mame => MameDataTypeDetails {
@@ -90,6 +106,6 @@ pub fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDetails {
             zip_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.dat$").unwrap(),
             // read_function: resources_reader::read_resources_file,
-        },
+        }
     }
 }

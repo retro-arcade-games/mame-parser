@@ -66,8 +66,14 @@ where
 /// The function parses the URL and returns the last segment, which is typically the file name.
 /// If the URL contains a query parameter in the format `?file=name.ext`, it returns the value of that parameter.
 ///
-/// # Examples
+/// /// # Parameters
+/// - `url`: A string slice (`&str`) representing the URL from which the file name should be extracted.
 ///
+/// # Returns
+/// Returns a `String` containing the extracted file name from the URL. If no valid file name is found,
+/// it returns an empty string.
+/// 
+/// # Examples
 /// ```
 /// use mame_parser::core::downloader::file_downloader::get_file_name;
 ///
@@ -80,14 +86,6 @@ where
 /// assert_eq!(file_name, "example.zip");
 /// ```
 ///
-/// # Parameters
-///
-/// - `url`: A string slice (`&str`) representing the URL from which the file name should be extracted.
-///
-/// # Returns
-///
-/// Returns a `String` containing the extracted file name from the URL. If no valid file name is found,
-/// it returns an empty string.
 pub fn get_file_name(url: &str) -> String {
     let last_param = url.split('/').last().unwrap_or("");
     let file_name = last_param.split('=').last().unwrap_or("");
