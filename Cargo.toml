@@ -20,8 +20,8 @@ regex = "1.5.4"
 url = "2.2"
 
 [[example]]
-name = "download_mame_file_progress"
-path = "examples/download_mame_file_progress.rs"
+name = "download_multi_progress"
+path = "examples/download_multi_progress.rs"
 
 [dependencies.indicatif]
 version = "0.16"

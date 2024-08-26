@@ -10,16 +10,23 @@ use crate::helpers::data_source_helper::get_data_source;
 pub fn download_file(
     data_type: MameDataType,
     destination_folder: &Path,
-) -> Result<PathBuf, Box<dyn Error>> {
-    download_file_callback(data_type, destination_folder, None::<fn(u64, u64)>)
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
+    download_file_callback(data_type, destination_folder, None::<fn(u64, u64, String)>)
 }
 
-pub fn download_file_callback(
+pub fn download_file_callback<F>(
     data_type: MameDataType,
     destination_folder: &Path,
-    progress_callback: Option<impl Fn(u64, u64) + Send + 'static>,
-) -> Result<PathBuf, Box<dyn Error>> {
+    progress_callback: Option<F>,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
+where
+    F: Fn(u64, u64, String) + Send + 'static,
+{
     let details = get_data_type_details(data_type);
+
+    if let Some(ref callback) = progress_callback {
+        callback(0, 0, String::from("Searching url"));
+    }
 
     let download_url = get_data_source(&details.source, &details.source_match)?;
 
@@ -30,14 +37,13 @@ fn download<F>(
     url: &str,
     destination_folder: &Path,
     progress_callback: Option<F>,
-) -> Result<PathBuf, Box<dyn Error>>
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
 where
-    F: Fn(u64, u64) + Send + 'static,
+    F: Fn(u64, u64, String) + Send + 'static,
 {
     let file_name = get_file_name(url);
 
     let mut response = Client::new().get(url).send()?;
-
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
     let mut buffer = [0; 4096];
@@ -45,8 +51,7 @@ where
     let file_path = destination_folder.join(file_name);
     let mut file = File::create(&file_path)?;
 
-    loop {
-        let bytes_read = response.read(&mut buffer)?;
+    while let Ok(bytes_read) = response.read(&mut buffer) {
         if bytes_read == 0 {
             break;
         }
@@ -54,7 +59,7 @@ where
         downloaded += bytes_read as u64;
 
         if let Some(ref callback) = progress_callback {
-            callback(downloaded, total_size);
+            callback(downloaded, total_size, String::from(""));
         }
     }
 

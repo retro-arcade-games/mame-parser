@@ -41,7 +41,7 @@ use url::Url;
 /// ```
 ///
 
-pub fn get_data_source(url: &str, matching: &str) -> Result<String, Box<dyn Error>> {
+pub fn get_data_source(url: &str, matching: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
     // Download the HTML
     let client = Client::new();
     let response = client.get(url).send()?;

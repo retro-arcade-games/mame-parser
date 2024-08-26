@@ -1,5 +1,6 @@
 use regex::Regex;
 
+#[derive(Debug, Clone, Copy)]
 pub enum MameDataType {
     Mame,
     Languages,
