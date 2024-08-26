@@ -1,6 +1,6 @@
 use regex::Regex;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MameDataType {
     Mame,
     Languages,
@@ -34,22 +34,33 @@ pub struct MameDataTypeDetails {
     // pub read_function: fn(&str) -> Result<(), Box<dyn std::error::Error>>,
 }
 
-/// Get the details of a MameDataType
-/// 
+/// Retrieves the details for a given `MameDataType`.
+///
+/// This function returns the relevant metadata for a specific `MameDataType`,
+/// such as the name, source URL, patterns to match the expected ZIP files,
+/// and the data files inside the archive. These details are used to locate
+/// and process the appropriate files for each type.
+///
 /// # Parameters
-/// * `data_type` - The MameDataType to get the details for
-/// 
+/// - `data_type`: The `MameDataType` for which the details are being retrieved.
+///
 /// # Returns
-/// The MameDataTypeDetails for the given MameDataType
-/// 
-/// # Examples
+/// A `MameDataTypeDetails` struct containing the following information:
+/// - `name`: The name of the data type (e.g., "Mame", "Languages").
+/// - `source`: The URL from which the file is downloaded.
+/// - `source_match`: A pattern or additional path used to determine the exact file to download.
+/// - `zip_file_pattern`: A regex pattern that matches the ZIP file name.
+/// - `data_file_pattern`: A regex pattern that matches the data file inside the ZIP archive.
+///
+/// # Example
 /// ```
 /// use mame_parser::core::mame_data_types::{MameDataType, get_data_type_details};
-/// 
-/// let mame_details = get_data_type_details(MameDataType::Mame);
-/// assert_eq!(mame_details.name, "Mame");
-/// ```
 ///
+/// let details = get_data_type_details(MameDataType::Mame);
+/// assert_eq!(details.name, "Mame");
+/// assert!(details.zip_file_pattern.is_match("MAME_Dats_202107.7z"));
+/// assert!(details.data_file_pattern.is_match("MAME 0.229.dat"));
+/// ```
 pub fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDetails {
     match data_type {
         MameDataType::Mame => MameDataTypeDetails {
@@ -107,6 +118,6 @@ pub fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDetails {
             zip_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.dat$").unwrap(),
             // read_function: resources_reader::read_resources_file,
-        }
+        },
     }
 }

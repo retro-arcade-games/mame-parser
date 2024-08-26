@@ -19,9 +19,13 @@ serde = { version = "1.0", features = ["derive"] }
 regex = "1.5.4"
 url = "2.2"
 
-[[example]]
-name = "download_multi_progress"
-path = "examples/download_multi_progress.rs"
+[dev-dependencies]
+indicatif = "0.16"
 
-[dependencies.indicatif]
-version = "0.16"
+[[example]]
+name = "download_file"
+path = "examples/download_files/download_file.rs"
+
+[[example]]
+name = "download_files"
+path = "examples/download_files/download_files.rs"
