@@ -1,15 +1,17 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use mame_parser::core::downloader::file_downloader::{download_files, CallbackType};
-use mame_parser::core::mame_data_types::MameDataType;
+use mame_parser::{download_files, CallbackType, MameDataType};
 use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+    // Define the workspace path
     let workspace_path = Path::new("playground");
 
+    // Create a multi progress bar
     let multi_progress = MultiProgress::new();
 
+    // Create progress bars for each data type
     let progress_bars = Arc::new(
         MameDataType::all_variants()
             .iter()
@@ -25,10 +27,12 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .collect::<Vec<_>>(),
     );
 
+    // Download the files
     let handles = download_files(
         workspace_path,
         move |data_type, downloaded, total_size, message: String, callback_type: CallbackType| {
             if let Some((_, progress_bar)) = progress_bars.iter().find(|(dt, _)| *dt == data_type) {
+                // Update the progress bar
                 match callback_type {
                     CallbackType::Progress => {
                         progress_bar.set_length(total_size);
@@ -48,8 +52,10 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         },
     );
 
+    // Wait for all threads to finish
     multi_progress.join().unwrap();
 
+    // Print the result
     for handle in handles {
         match handle.join().unwrap() {
             Ok(path) => {

@@ -1,13 +1,13 @@
 use indicatif::{ProgressBar, ProgressStyle};
-use mame_parser::core::downloader::file_downloader::CallbackType;
-use mame_parser::core::mame_data_types::MameDataType;
-use mame_parser::download_file;
+use mame_parser::{download_file, CallbackType, MameDataType};
 use std::error::Error;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // Define the workspace path
     let workspace_path = Path::new("playground");
 
+    // Create a progress bar
     let progress_bar = ProgressBar::new(100);
     progress_bar.set_style(
         ProgressStyle::default_bar()
@@ -15,11 +15,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             .progress_chars("#>-"),
     );
 
+    // Download the file
     let downloaded_file = download_file(
         MameDataType::NPlayers,
         workspace_path,
         Some(
             move |downloaded, total_size, message: String, callback_type: CallbackType| {
+                // Update the progress bar
                 match callback_type {
                     CallbackType::Progress => {
                         progress_bar.set_length(total_size);
@@ -39,6 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         ),
     );
 
+    // Print the result
     match downloaded_file {
         Ok(downloaded_file) => {
             println!(
