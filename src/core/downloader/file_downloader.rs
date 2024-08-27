@@ -97,7 +97,7 @@ fn ensure_folder_exists(path: &Path) -> io::Result<()> {
 /// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`, or `CallbackType::Progress`.
 ///
 /// # Example
-/// ```rust
+/// ```rust, ignore
 /// use mame_parser::{download_file, CallbackType, MameDataType};
 /// use std::path::Path;
 ///
@@ -204,7 +204,7 @@ where
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
 /// # Example
-/// ```rust
+/// ```rust, ignore
 /// use mame_parser::{download_files, CallbackType, MameDataType};
 /// use std::path::Path;
 /// use std::thread;

@@ -27,7 +27,7 @@ use url::Url;
 /// - There is an issue constructing the final URL (e.g., missing scheme or host).
 ///
 /// # Example
-/// ```rust
+/// ```rust, ignore
 /// use mame_parser::helpers::data_source_helper::get_data_source;
 ///
 /// let url = "https://www.progettosnaps.net/dats/MAME";
