@@ -338,12 +338,7 @@ where
 
     if let Some(ref callback) = progress_callback {
         let message = format!("{} downloaded successfully", file_name);
-        callback(
-            downloaded,
-            downloaded,
-            message,
-            CallbackType::Finish,
-        );
+        callback(downloaded, downloaded, message, CallbackType::Finish);
     }
 
     Ok(file_path)
