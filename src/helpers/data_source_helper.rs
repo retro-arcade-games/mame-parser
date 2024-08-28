@@ -26,16 +26,6 @@ use url::Url;
 /// - No matching link is found.
 /// - There is an issue constructing the final URL (e.g., missing scheme or host).
 ///
-/// # Example
-/// ```rust, ignore
-/// use mame_parser::helpers::data_source_helper::get_data_source;
-///
-/// let url = "https://www.progettosnaps.net/dats/MAME";
-/// let matching = "download/?tipo=dat_mame&file=/dats/MAME/packs/MAME_Dats";
-/// let data_source = get_data_source(url, matching);
-/// assert!(data_source.is_ok());
-/// ```
-///
 pub(crate) fn get_data_source(
     url: &str,
     matching: &str,
@@ -74,5 +64,98 @@ pub(crate) fn get_data_source(
         Ok(source)
     } else {
         Err("No matching source found".into())
+    }
+}
+
+/// Extracts the file name from a given URL.
+///
+/// This function takes a URL string and extracts the last part of the path, then further processes it to obtain the file name
+/// if it is part of a query parameter. The function is useful for URLs that include file names either at the end of the path
+/// or as part of a query string.
+///
+/// # Parameters
+/// - `url`: A string slice (`&str`) representing the URL from which to extract the file name. For example:
+///   `https://example.com/download?file=my_document.pdf`.
+///
+/// # Returns
+/// Returns a `String` containing the extracted file name:
+/// - On success: The extracted file name (e.g., `"my_document.pdf"`).
+/// - If the URL does not have a valid structure or does not contain a recognizable file name, an empty string is returned.
+///
+pub(crate) fn get_file_name_from_url(url: &str) -> String {
+    let last_param = url.split('/').last().unwrap_or("");
+    let file_name = last_param.split('=').last().unwrap_or("");
+    file_name.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error;
+
+    #[test]
+    fn test_get_data_source_valid() -> Result<(), Box<dyn Error + Send + Sync>> {
+        let url = "https://www.progettosnaps.net/languages";
+        let matching = "download";
+
+        let result = get_data_source(url, matching);
+        assert!(result.is_ok());
+        let source_url = result.unwrap();
+        assert!(source_url.contains(matching));
+        assert!(source_url.ends_with("zip") || source_url.ends_with("7z"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_data_source_no_match() -> Result<(), Box<dyn Error + Send + Sync>> {
+        let url = "https://www.progettosnaps.net/languages";
+        let matching = "nonexistentfile";
+
+        let result = get_data_source(url, matching);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "No matching source found");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_file_name_basic() {
+        let url = "https://example.com/downloads/file.zip";
+        let expected = "file.zip";
+        let result = get_file_name_from_url(url);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_file_name_with_query_params() {
+        let url = "https://example.com/download?file=file.zip";
+        let expected = "file.zip";
+        let result = get_file_name_from_url(url);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_file_name_no_slash() {
+        let url = "https://example.com/file.zip";
+        let expected = "file.zip";
+        let result = get_file_name_from_url(url);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_file_name_empty_string() {
+        let url = "";
+        let expected = "";
+        let result = get_file_name_from_url(url);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_file_name_no_file_name() {
+        let url = "https://example.com/downloads/";
+        let expected = "";
+        let result = get_file_name_from_url(url);
+        assert_eq!(result, expected);
     }
 }

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::thread;
 
 use crate::core::mame_data_types::{get_data_type_details, MameDataType};
-use crate::helpers::data_source_helper::get_data_source;
+use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
 
 /// The default folder path where downloaded files will be saved.
 ///
@@ -100,7 +100,7 @@ fn ensure_folder_exists(path: &Path) -> io::Result<()> {
 /// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`,`CallbackType::Progress`, or `CallbackType::Finish`.
 ///
 /// # Example
-/// ```rust, ignore
+/// ```rust
 /// use mame_parser::{download_file, CallbackType, MameDataType};
 /// use std::path::Path;
 ///
@@ -152,7 +152,7 @@ where
     };
 
     // Checks if the file already exists.
-    let file_name = get_file_name(&download_url);
+    let file_name = get_file_name_from_url(&download_url);
     let file_path = destination_folder.join(file_name.clone());
 
     if let Some(ref callback) = progress_callback {
@@ -204,7 +204,7 @@ where
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
 /// # Example
-/// ```rust, ignore
+/// ```rust
 /// use mame_parser::{download_files, CallbackType, MameDataType};
 /// use std::path::Path;
 /// use std::thread;
@@ -309,7 +309,7 @@ fn download<F>(
 where
     F: Fn(u64, u64, String, CallbackType) + Send + 'static,
 {
-    let file_name = get_file_name(url);
+    let file_name = get_file_name_from_url(url);
 
     let mut response = Client::new().get(url).send()?;
     let total_size = response.content_length().unwrap_or(0);
@@ -342,25 +342,4 @@ where
     }
 
     Ok(file_path)
-}
-
-/// Extracts the file name from a given URL.
-///
-/// This function takes a URL string and extracts the last part of the path, then further processes it to obtain the file name
-/// if it is part of a query parameter. The function is useful for URLs that include file names either at the end of the path
-/// or as part of a query string.
-///
-/// # Parameters
-/// - `url`: A string slice (`&str`) representing the URL from which to extract the file name. For example:
-///   `https://example.com/download?file=my_document.pdf`.
-///
-/// # Returns
-/// Returns a `String` containing the extracted file name:
-/// - On success: The extracted file name (e.g., `"my_document.pdf"`).
-/// - If the URL does not have a valid structure or does not contain a recognizable file name, an empty string is returned.
-///
-fn get_file_name(url: &str) -> String {
-    let last_param = url.split('/').last().unwrap_or("");
-    let file_name = last_param.split('=').last().unwrap_or("");
-    file_name.to_string()
 }
