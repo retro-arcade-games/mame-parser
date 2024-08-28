@@ -29,3 +29,6 @@ path = "examples/download_files/download_file.rs"
 [[example]]
 name = "download_files"
 path = "examples/download_files/download_files.rs"
+
+[package.metadata.docs.rs]
+no-deps = true

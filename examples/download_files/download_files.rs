@@ -37,12 +37,14 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                     CallbackType::Progress => {
                         progress_bar.set_length(total_size);
                         progress_bar.set_position(downloaded);
-                        if downloaded == total_size {
-                            progress_bar.finish_with_message(format!("Download completed"));
-                        }
                     }
                     CallbackType::Info => {
                         progress_bar.set_message(message);
+                    }
+                    CallbackType::Finish => {
+                        progress_bar.set_length(total_size);
+                        progress_bar.set_position(downloaded);
+                        progress_bar.finish_with_message(message);
                     }
                     CallbackType::Error => {
                         progress_bar.finish_with_message(message);

@@ -15,7 +15,7 @@ use regex::Regex;
 /// - `History`: Represents historical data, trivia, and other contextual information related to games.
 /// - `Resources`: Represents additional resources like images, videos, and other media related to MAME games.
 ///
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MameDataType {
     /// Represents the core MAME data, including ROM information and basic metadata.
     Mame,

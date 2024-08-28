@@ -25,6 +25,7 @@ const DOWNLOAD_PATH: &str = "downloads";
 /// # Variants
 /// - `Info`: Indicates a general informational message, such as status updates or non-critical notifications.
 /// - `Progress`: Indicates that the callback is providing progress updates, typically involving downloaded bytes or percentages.
+/// - `Finish`: Indicates that an operation has completed successfully, providing a final status message.
 /// - `Error`: Indicates that an error has occurred and provides details related to the issue.
 ///
 #[derive(Debug)]
@@ -33,6 +34,8 @@ pub enum CallbackType {
     Info,
     /// Indicates that progress information is being reported (e.g., download progress).
     Progress,
+    /// Indicates that an operation has finished successfully.
+    Finish,
     /// Signals that an error has occurred and provides error details.
     Error,
 }
@@ -94,7 +97,7 @@ fn ensure_folder_exists(path: &Path) -> io::Result<()> {
 /// - `downloaded_bytes`: The number of bytes downloaded so far.
 /// - `total_bytes`: The total size of the file being downloaded (if available).
 /// - `status_message`: A status message indicating the current operation (e.g., "Searching URL", "Downloading file").
-/// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`, or `CallbackType::Progress`.
+/// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`,`CallbackType::Progress`, or `CallbackType::Finish`.
 ///
 /// # Example
 /// ```rust, ignore
@@ -158,15 +161,12 @@ where
     }
 
     if Path::new(&file_path).exists() {
-        let message = format!("File {} already exists", file_name);
+        let message = format!("{} already exists", file_name);
 
         if let Some(ref callback) = progress_callback {
-            callback(0, 0, message.clone(), CallbackType::Error);
+            callback(0, 0, message.clone(), CallbackType::Finish);
         }
-        return Err(Box::new(io::Error::new(
-            io::ErrorKind::AlreadyExists,
-            message,
-        )));
+        return Ok(file_path);
     }
 
     // Downloads the file.
@@ -316,7 +316,7 @@ where
     let mut downloaded: u64 = 0;
     let mut buffer = [0; 4096];
 
-    let file_path = destination_folder.join(file_name);
+    let file_path = destination_folder.join(file_name.clone());
     let mut file = File::create(&file_path)?;
 
     while let Ok(bytes_read) = response.read(&mut buffer) {
@@ -337,11 +337,12 @@ where
     }
 
     if let Some(ref callback) = progress_callback {
+        let message = format!("{} downloaded successfully", file_name);
         callback(
             downloaded,
             downloaded,
-            String::from(""),
-            CallbackType::Progress,
+            message,
+            CallbackType::Finish,
         );
     }
 

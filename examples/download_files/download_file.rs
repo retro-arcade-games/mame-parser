@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Download the file
     let downloaded_file = download_file(
-        MameDataType::NPlayers,
+        MameDataType::Series,
         workspace_path,
         Some(
             move |downloaded, total_size, message: String, callback_type: CallbackType| {
@@ -26,12 +26,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                     CallbackType::Progress => {
                         progress_bar.set_length(total_size);
                         progress_bar.set_position(downloaded);
-                        if downloaded == total_size {
-                            progress_bar.finish_with_message(format!("Download completed"));
-                        }
                     }
                     CallbackType::Info => {
                         progress_bar.set_message(message);
+                    }
+                    CallbackType::Finish => {
+                        progress_bar.set_length(total_size);
+                        progress_bar.set_position(downloaded);
+                        progress_bar.finish_with_message(message);
                     }
                     CallbackType::Error => {
                         progress_bar.finish_with_message(message);
