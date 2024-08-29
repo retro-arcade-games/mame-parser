@@ -1,20 +1,14 @@
 use reqwest::blocking::Client;
 use std::error::Error;
-use std::fs::{self, File};
-use std::io::{self, Read, Write};
+use std::fs::File;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 
 use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
-
-/// The default folder path where downloaded files will be saved.
-///
-/// This constant defines the relative path for storing downloaded files within the workspace.
-/// It is typically used as part of a larger path when specifying the destination folder for downloads.
-///
-const DOWNLOAD_PATH: &str = "downloads";
+use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS};
 
 /// Represents the type of callback being invoked during an operation.
 ///
@@ -38,34 +32,6 @@ pub enum CallbackType {
     Finish,
     /// Signals that an error has occurred and provides error details.
     Error,
-}
-
-/// Ensures that the specified folder exists, creating it if necessary.
-///
-/// This function checks whether the provided path exists, and if it does not, attempts to create
-/// the folder and any necessary parent directories. It is a utility function to guarantee that
-/// a folder is available for file operations, such as downloads or data storage.
-///
-/// # Parameters
-/// - `path`: A reference to a `Path` representing the folder path to check or create. For example:
-///   `/path/to/folder`.
-///
-/// # Returns
-/// Returns an `io::Result<()>`:
-/// - On success: Returns `Ok(())` indicating that the folder exists or was successfully created.
-/// - On failure: Returns an `io::Error` if the folder could not be created due to issues such as
-///   insufficient permissions or an invalid path.
-///
-/// # Errors
-/// This function will return an error if:
-/// - The path cannot be created due to filesystem issues (e.g., permission denied).
-/// - The provided path is invalid or contains unsupported characters.
-///
-fn ensure_folder_exists(path: &Path) -> io::Result<()> {
-    if !path.exists() {
-        fs::create_dir_all(path)?;
-    }
-    Ok(())
 }
 
 /// Downloads a specific MAME data file based on the provided data type and saves it to the workspace.
@@ -126,30 +92,31 @@ where
     F: Fn(u64, u64, String, CallbackType) + Send + 'static,
 {
     // Creates a folder if it does not exist.
-    let destination_folder = workspace_path.join(DOWNLOAD_PATH);
+    let destination_folder = workspace_path.join(WORKSPACE_PATHS.download_path);
     let folder_created = ensure_folder_exists(&destination_folder);
     if let Err(err) = folder_created {
         return Err(Box::new(err));
     }
 
     // Retrieves the details for a given `MameDataType`
-    let details = get_data_type_details(data_type);
+    let data_type_details = get_data_type_details(data_type);
 
     // Retrieves the URL for the data type.
     if let Some(ref callback) = progress_callback {
-        let message = format!("Searching URL for {}", details.name);
+        let message = format!("Searching URL for {}", data_type_details.name);
         callback(0, 0, message, CallbackType::Info);
     }
-    let download_url = match get_data_source(&details.source, &details.source_match) {
-        Ok(url) => url,
-        Err(err) => {
-            if let Some(ref callback) = progress_callback {
-                let message = format!("Couldn't find URL for {}", details.name);
-                callback(0, 0, message, CallbackType::Error);
+    let download_url =
+        match get_data_source(&data_type_details.source, &data_type_details.source_match) {
+            Ok(url) => url,
+            Err(err) => {
+                if let Some(ref callback) = progress_callback {
+                    let message = format!("Couldn't find URL for {}", data_type_details.name);
+                    callback(0, 0, message, CallbackType::Error);
+                }
+                return Err(err.into());
             }
-            return Err(err.into());
-        }
-    };
+        };
 
     // Checks if the file already exists.
     let file_name = get_file_name_from_url(&download_url);
@@ -171,7 +138,7 @@ where
 
     // Downloads the file.
     if let Some(ref callback) = progress_callback {
-        let message = format!("Downloading {} file", details.name);
+        let message = format!("Downloading {} file", data_type_details.name);
         callback(0, 0, message, CallbackType::Info);
     }
     download(&download_url, &destination_folder, progress_callback)
