@@ -5,22 +5,18 @@ use crate::core::mame_data_types::get_data_type_details;
 use crate::helpers::file_system_helpers::{
     ensure_folder_exists, find_file_with_pattern, WORKSPACE_PATHS,
 };
-use crate::{CallbackType, MameDataType};
+use crate::{CallbackType, MameDataType, ProgressCallback, ProgressInfo, SharedProgressCallback};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::thread::{self, sleep};
-use std::time;
+use std::thread;
 use std::{fs::File, io::Write};
 
-pub fn unpack_file<F>(
+pub fn unpack_file(
     data_type: MameDataType,
     workspace_path: &Path,
-    progress_callback: Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     // Retrieves the details for a given `MameDataType`
     let data_type_details = get_data_type_details(data_type);
 
@@ -35,32 +31,38 @@ where
     }
 
     // Check if file already unpacked
-    if let Some(ref callback) = progress_callback {
-        let message = format!(
+
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!(
             "Checking if {} file already unpacked",
             data_type_details.name
-        );
-        callback(0, 0, message, CallbackType::Info);
-    }
+        ),
+        callback_type: CallbackType::Info,
+    });
 
     if let Ok(existing_data_file) = find_file_with_pattern(
         &extract_folder.to_str().unwrap(),
         &data_type_details.data_file_pattern,
     ) {
-        let message = format!("{} file already unpacked", data_type_details.name);
+        progress_callback(ProgressInfo {
+            progress: 0,
+            total: 0,
+            message: format!("{} file already unpacked", data_type_details.name),
+            callback_type: CallbackType::Finish,
+        });
 
-        if let Some(ref callback) = progress_callback {
-            callback(0, 0, message.clone(), CallbackType::Finish);
-        }
         return Ok(existing_data_file.into());
     }
 
     // Check if zip file is present
-    if let Some(ref callback) = progress_callback {
-        let message = format!("Checking if {} zip file exists", data_type_details.name);
-        callback(0, 0, message, CallbackType::Info);
-        sleep(time::Duration::from_millis(1000));
-    }
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Checking if {} zip file exists", data_type_details.name),
+        callback_type: CallbackType::Info,
+    });
 
     let download_folder = workspace_path.join(WORKSPACE_PATHS.download_path);
     let zip_file_path = find_file_with_pattern(
@@ -71,11 +73,13 @@ where
     match zip_file_path {
         // Unpack the file
         Ok(zip_file_path) => {
-            if let Some(ref callback) = progress_callback {
-                let zip_file = zip_file_path.split('/').last().unwrap();
-                let message = format!("Unpacking {}", zip_file);
-                callback(0, 0, message, CallbackType::Info);
-            }
+            let zip_file = zip_file_path.split('/').last().unwrap();
+            progress_callback(ProgressInfo {
+                progress: 0,
+                total: 0,
+                message: format!("Unpacking {}", zip_file),
+                callback_type: CallbackType::Info,
+            });
 
             let unpack_result = unpack(&zip_file_path, &extract_folder, &progress_callback);
 
@@ -92,36 +96,40 @@ where
                             "{} data file not present after unpacking",
                             data_type_details.name
                         );
+                        progress_callback(ProgressInfo {
+                            progress: 0,
+                            total: 0,
+                            message: message.clone(),
+                            callback_type: CallbackType::Error,
+                        });
 
-                        if let Some(ref callback) = progress_callback {
-                            callback(0, 0, message.clone(), CallbackType::Error);
-                        }
                         return Err(message.into());
                     }
                 }
                 Err(err) => {
-                    return Err(err);
+                    return Err(err.into());
                 }
             }
         }
         Err(err) => {
             let message = format!("{} zip file not found", data_type_details.name);
 
-            if let Some(ref callback) = progress_callback {
-                callback(0, 0, message.clone(), CallbackType::Error);
-            }
+            progress_callback(ProgressInfo {
+                progress: 0,
+                total: 0,
+                message: message.clone(),
+                callback_type: CallbackType::Error,
+            });
+
             return Err(err.into());
         }
     }
 }
 
-pub fn unpack_files<F>(
+pub fn unpack_files(
     workspace_path: &Path,
-    progress_callback: F,
-) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>>
-where
-    F: Fn(MameDataType, u64, u64, String, CallbackType) + Send + Sync + 'static,
-{
+    progress_callback: SharedProgressCallback,
+) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>> {
     let progress_callback = Arc::new(progress_callback);
 
     MameDataType::all_variants()
@@ -134,14 +142,8 @@ where
                 unpack_file(
                     data_type,
                     &workspace_path,
-                    Some(move |unpacked_files, total_files, message, callback_type| {
-                        progress_callback(
-                            data_type,
-                            unpacked_files,
-                            total_files,
-                            message,
-                            callback_type,
-                        );
+                    Box::new(move |progress_info| {
+                        progress_callback(data_type, progress_info);
                     }),
                 )
             })
@@ -149,14 +151,11 @@ where
         .collect()
 }
 
-fn unpack<F>(
+fn unpack(
     zip_file_path: &str,
     extract_folder: &Path,
-    progress_callback: &Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: &ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     match zip_file_path {
         path if path.ends_with(".zip") => {
             return extract_zip(
@@ -176,14 +175,11 @@ where
     }
 }
 
-fn extract_zip<F>(
+fn extract_zip(
     archive_path: &str,
     destination_folder: &str,
-    progress_callback: &Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: &ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     let file = File::open(archive_path)?;
     let mut archive = ZipArchive::new(file)?;
 
@@ -208,33 +204,30 @@ where
 
         progress += 1;
 
-        if let Some(ref callback) = progress_callback {
-            callback(
-                progress,
-                total_files,
-                String::from(""),
-                CallbackType::Progress,
-            );
-        }
+        progress_callback(ProgressInfo {
+            progress,
+            total: total_files,
+            message: String::from(""),
+            callback_type: CallbackType::Progress,
+        });
     }
 
-    if let Some(ref callback) = progress_callback {
-        let zip_file = archive_path.split('/').last().unwrap();
-        let message = format!("{} unpacked successfully", zip_file);
-        callback(progress, progress, message, CallbackType::Finish);
-    }
+    let zip_file = archive_path.split('/').last().unwrap();
+    progress_callback(ProgressInfo {
+        progress,
+        total: progress,
+        message: format!("{} unpacked successfully", zip_file),
+        callback_type: CallbackType::Finish,
+    });
 
     Ok(destination_folder.into())
 }
 
-fn extract_7zip<F>(
+fn extract_7zip(
     archive_path: &str,
     destination_folder: &str,
-    progress_callback: &Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: &ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     let mut sz = sevenz_rust::SevenZReader::open(archive_path, Password::empty()).unwrap();
 
     let total_files = sz.archive().files.len();
@@ -255,14 +248,13 @@ where
             let read_size = reader.read(&mut buf)?;
             if read_size == 0 {
                 progress_entries += 1;
-                if let Some(ref callback) = progress_callback {
-                    callback(
-                        progress_entries,
-                        total_files as u64,
-                        String::from(""),
-                        CallbackType::Progress,
-                    );
-                }
+
+                progress_callback(ProgressInfo {
+                    progress: progress_entries,
+                    total: total_files as u64,
+                    message: String::from(""),
+                    callback_type: CallbackType::Progress,
+                });
 
                 break Ok(true);
             }
@@ -271,16 +263,13 @@ where
     })
     .unwrap();
 
-    if let Some(ref callback) = progress_callback {
-        let zip_file = archive_path.split('/').last().unwrap();
-        let message = format!("{} unpacked successfully", zip_file);
-        callback(
-            progress_entries,
-            progress_entries,
-            message,
-            CallbackType::Finish,
-        );
-    }
+    let zip_file = archive_path.split('/').last().unwrap();
+    progress_callback(ProgressInfo {
+        progress: progress_entries,
+        total: progress_entries,
+        message: format!("{} unpacked successfully", zip_file),
+        callback_type: CallbackType::Finish,
+    });
 
     Ok(destination_folder.into())
 }

@@ -1,5 +1,7 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use mame_parser::{download_files, CallbackType, MameDataType};
+use mame_parser::{
+    download_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback,
+};
 use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;
@@ -27,32 +29,33 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .collect::<Vec<_>>(),
     );
 
-    // Download the files
-    let handles = download_files(
-        workspace_path,
-        move |data_type, downloaded, total_size, message: String, callback_type: CallbackType| {
+    let shared_progress_callback: SharedProgressCallback = Arc::new(
+        move |data_type: MameDataType, progress_info: ProgressInfo| {
             if let Some((_, progress_bar)) = progress_bars.iter().find(|(dt, _)| *dt == data_type) {
                 // Update the progress bar
-                match callback_type {
+                match progress_info.callback_type {
                     CallbackType::Progress => {
-                        progress_bar.set_length(total_size);
-                        progress_bar.set_position(downloaded);
+                        progress_bar.set_length(progress_info.total);
+                        progress_bar.set_position(progress_info.progress);
                     }
                     CallbackType::Info => {
-                        progress_bar.set_message(message);
+                        progress_bar.set_message(progress_info.message);
                     }
                     CallbackType::Finish => {
-                        progress_bar.set_length(total_size);
-                        progress_bar.set_position(downloaded);
-                        progress_bar.finish_with_message(message);
+                        progress_bar.set_length(progress_info.total);
+                        progress_bar.set_position(progress_info.progress);
+                        progress_bar.finish_with_message(progress_info.message);
                     }
                     CallbackType::Error => {
-                        progress_bar.finish_with_message(message);
+                        progress_bar.finish_with_message(progress_info.message);
                     }
                 }
             }
         },
     );
+
+    // Download the files
+    let handles = download_files(workspace_path, shared_progress_callback);
 
     // Wait for all threads to finish
     multi_progress.join().unwrap();

@@ -1,5 +1,5 @@
 use indicatif::{ProgressBar, ProgressStyle};
-use mame_parser::{unpack_file, CallbackType, MameDataType};
+use mame_parser::{unpack_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
 use std::error::Error;
 use std::path::Path;
 
@@ -15,33 +15,29 @@ fn main() -> Result<(), Box<dyn Error>> {
             .progress_chars("#>-"),
     );
 
+    let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
+        // Update the progress bar
+        match progress_info.callback_type {
+            CallbackType::Progress => {
+                progress_bar.set_length(progress_info.total);
+                progress_bar.set_position(progress_info.progress);
+            }
+            CallbackType::Info => {
+                progress_bar.set_message(progress_info.message);
+            }
+            CallbackType::Finish => {
+                progress_bar.set_length(progress_info.total);
+                progress_bar.set_position(progress_info.progress);
+                progress_bar.finish_with_message(progress_info.message);
+            }
+            CallbackType::Error => {
+                progress_bar.finish_with_message(progress_info.message);
+            }
+        }
+    });
+
     // Unpack the file
-    let unpacked_file = unpack_file(
-        MameDataType::Series,
-        workspace_path,
-        Some(
-            move |unpacked_files, total_files, message: String, callback_type: CallbackType| {
-                // Update the progress bar
-                match callback_type {
-                    CallbackType::Progress => {
-                        progress_bar.set_length(total_files);
-                        progress_bar.set_position(unpacked_files);
-                    }
-                    CallbackType::Info => {
-                        progress_bar.set_message(message);
-                    }
-                    CallbackType::Finish => {
-                        progress_bar.set_length(total_files);
-                        progress_bar.set_position(unpacked_files);
-                        progress_bar.finish_with_message(message);
-                    }
-                    CallbackType::Error => {
-                        progress_bar.finish_with_message(message);
-                    }
-                }
-            },
-        ),
-    );
+    let unpacked_file = unpack_file(MameDataType::Series, workspace_path, progress_callback);
 
     // Print the result
     match unpacked_file {

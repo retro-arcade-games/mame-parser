@@ -6,33 +6,12 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 
+use crate::core::callback_progress::{
+    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+};
 use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
 use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS};
-
-/// Represents the type of callback being invoked during an operation.
-///
-/// The `CallbackType` enum is used to categorize the nature of the callback, allowing the caller
-/// to differentiate between informational messages, progress updates, and errors. This is particularly
-/// useful in scenarios where different types of feedback need to be handled in distinct ways.
-///
-/// # Variants
-/// - `Info`: Indicates a general informational message, such as status updates or non-critical notifications.
-/// - `Progress`: Indicates that the callback is providing progress updates, typically involving downloaded bytes or percentages.
-/// - `Finish`: Indicates that an operation has completed successfully, providing a final status message.
-/// - `Error`: Indicates that an error has occurred and provides details related to the issue.
-///
-#[derive(Debug)]
-pub enum CallbackType {
-    /// Conveys a general informational message.
-    Info,
-    /// Indicates that progress information is being reported (e.g., download progress).
-    Progress,
-    /// Indicates that an operation has finished successfully.
-    Finish,
-    /// Signals that an error has occurred and provides error details.
-    Error,
-}
 
 /// Downloads a specific MAME data file based on the provided data type and saves it to the workspace.
 ///
@@ -65,32 +44,11 @@ pub enum CallbackType {
 /// - `status_message`: A status message indicating the current operation (e.g., "Searching URL", "Downloading file").
 /// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`,`CallbackType::Progress`, or `CallbackType::Finish`.
 ///
-/// # Example
-/// ```rust
-/// use mame_parser::{download_file, CallbackType, MameDataType};
-/// use std::path::Path;
-///
-/// fn progress_callback(downloaded: u64, total: u64, message: String, callback_type: CallbackType) {
-///     println!("{} ({} / {}) - {:?}", message, downloaded, total, callback_type);
-/// }
-///
-/// let workspace_path = Path::new("playground");
-/// let result = download_file(MameDataType::Series, workspace_path, Some(progress_callback));
-///
-/// match result {
-///     Ok(path) => println!("File saved to: {:?}", path),
-///     Err(e) => println!("Download failed: {}", e),
-/// }
-/// ```
-///
-pub fn download_file<F>(
+pub fn download_file(
     data_type: MameDataType,
     workspace_path: &Path,
-    progress_callback: Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     // Creates a folder if it does not exist.
     let destination_folder = workspace_path.join(WORKSPACE_PATHS.download_path);
     let folder_created = ensure_folder_exists(&destination_folder);
@@ -102,18 +60,24 @@ where
     let data_type_details = get_data_type_details(data_type);
 
     // Retrieves the URL for the data type.
-    if let Some(ref callback) = progress_callback {
-        let message = format!("Searching URL for {}", data_type_details.name);
-        callback(0, 0, message, CallbackType::Info);
-    }
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Searching URL for {}", data_type_details.name),
+        callback_type: CallbackType::Info,
+    });
+
     let download_url =
         match get_data_source(&data_type_details.source, &data_type_details.source_match) {
             Ok(url) => url,
             Err(err) => {
-                if let Some(ref callback) = progress_callback {
-                    let message = format!("Couldn't find URL for {}", data_type_details.name);
-                    callback(0, 0, message, CallbackType::Error);
-                }
+                progress_callback(ProgressInfo {
+                    progress: 0,
+                    total: 0,
+                    message: format!("Couldn't find URL for {}", data_type_details.name),
+                    callback_type: CallbackType::Error,
+                });
+
                 return Err(err.into());
             }
         };
@@ -122,25 +86,32 @@ where
     let file_name = get_file_name_from_url(&download_url);
     let file_path = destination_folder.join(file_name.clone());
 
-    if let Some(ref callback) = progress_callback {
-        let message = format!("Checking if file {} already exists", file_name.clone());
-        callback(0, 0, message, CallbackType::Info);
-    }
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Checking if file {} already exists", file_name.clone()),
+        callback_type: CallbackType::Info,
+    });
 
     if Path::new(&file_path).exists() {
-        let message = format!("{} already exists", file_name);
+        progress_callback(ProgressInfo {
+            progress: 0,
+            total: 0,
+            message: format!("{} already exists", file_name),
+            callback_type: CallbackType::Finish,
+        });
 
-        if let Some(ref callback) = progress_callback {
-            callback(0, 0, message.clone(), CallbackType::Finish);
-        }
         return Ok(file_path);
     }
 
     // Downloads the file.
-    if let Some(ref callback) = progress_callback {
-        let message = format!("Downloading {} file", data_type_details.name);
-        callback(0, 0, message, CallbackType::Info);
-    }
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Downloading {} file", data_type_details.name),
+        callback_type: CallbackType::Info,
+    });
+
     download(&download_url, &destination_folder, progress_callback)
 }
 
@@ -170,47 +141,12 @@ where
 /// - `status_message`: A status message (e.g., progress or completion status).
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
-/// # Example
-/// ```rust
-/// use mame_parser::{download_files, CallbackType, MameDataType};
-/// use std::path::Path;
-/// use std::thread;
 ///
-/// fn progress_callback(
-///     data_type: MameDataType,
-///     downloaded: u64,
-///     total: u64,
-///     _status: String,
-///     _callback_type: CallbackType,
-/// ) {
-///     println!(
-///         "Downloading {:?}: {} of {} bytes",
-///         data_type, downloaded, total
-///     );
-/// }
-///
-/// let workspace_path = Path::new("playground");
-/// let handles = download_files(workspace_path, progress_callback);
-///
-/// for handle in handles {
-///     match handle.join() {
-///         Ok(result) => match result {
-///             Ok(path) => println!("File saved to: {:?}", path),
-///             Err(e) => println!("Download failed: {}", e),
-///         },
-///         Err(_) => println!("Thread panicked during download"),
-///     }
-/// }
-/// ```
-///
-pub fn download_files<F>(
+pub fn download_files(
     workspace_path: &Path,
-    progress_callback: F,
-) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>>
-where
-    F: Fn(MameDataType, u64, u64, String, CallbackType) + Send + Sync + 'static,
-{
-    let progress_callback = Arc::new(progress_callback);
+    progress_callback: SharedProgressCallback,
+) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>> {
+    let progress_callback = Arc::clone(&progress_callback);
 
     MameDataType::all_variants()
         .iter()
@@ -222,14 +158,8 @@ where
                 download_file(
                     data_type,
                     &workspace_path,
-                    Some(move |downloaded, total_size, message, callback_type| {
-                        progress_callback(
-                            data_type,
-                            downloaded,
-                            total_size,
-                            message,
-                            callback_type,
-                        );
+                    Box::new(move |progress_info| {
+                        progress_callback(data_type, progress_info);
                     }),
                 )
             })
@@ -268,14 +198,11 @@ where
 /// - `status_message`: A status message, which is currently set to an empty string.
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
-fn download<F>(
+fn download(
     url: &str,
     destination_folder: &Path,
-    progress_callback: Option<F>,
-) -> Result<PathBuf, Box<dyn Error + Send + Sync>>
-where
-    F: Fn(u64, u64, String, CallbackType) + Send + 'static,
-{
+    progress_callback: ProgressCallback,
+) -> Result<PathBuf, Box<dyn Error + Send + Sync>> {
     let file_name = get_file_name_from_url(url);
 
     let mut response = Client::new().get(url).send()?;
@@ -293,20 +220,20 @@ where
         file.write_all(&buffer[..bytes_read])?;
         downloaded += bytes_read as u64;
 
-        if let Some(ref callback) = progress_callback {
-            callback(
-                downloaded,
-                total_size,
-                String::from(""),
-                CallbackType::Progress,
-            );
-        }
+        progress_callback(ProgressInfo {
+            progress: downloaded,
+            total: total_size,
+            message: String::from(""),
+            callback_type: CallbackType::Progress,
+        });
     }
 
-    if let Some(ref callback) = progress_callback {
-        let message = format!("{} downloaded successfully", file_name);
-        callback(downloaded, downloaded, message, CallbackType::Finish);
-    }
+    progress_callback(ProgressInfo {
+        progress: downloaded,
+        total: downloaded,
+        message: format!("{} downloaded successfully", file_name),
+        callback_type: CallbackType::Progress,
+    });
 
     Ok(file_path)
 }
