@@ -20,19 +20,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         MameDataType::Series,
         workspace_path,
         Some(
-            move |downloaded, total_size, message: String, callback_type: CallbackType| {
+            move |unpacked_files, total_files, message: String, callback_type: CallbackType| {
                 // Update the progress bar
                 match callback_type {
                     CallbackType::Progress => {
-                        progress_bar.set_length(total_size);
-                        progress_bar.set_position(downloaded);
+                        progress_bar.set_length(total_files);
+                        progress_bar.set_position(unpacked_files);
                     }
                     CallbackType::Info => {
                         progress_bar.set_message(message);
                     }
                     CallbackType::Finish => {
-                        progress_bar.set_length(total_size);
-                        progress_bar.set_position(downloaded);
+                        progress_bar.set_length(total_files);
+                        progress_bar.set_position(unpacked_files);
                         progress_bar.finish_with_message(message);
                     }
                     CallbackType::Error => {

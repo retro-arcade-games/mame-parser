@@ -8,7 +8,8 @@ use crate::helpers::file_system_helpers::{
 use crate::{CallbackType, MameDataType};
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::thread::sleep;
+use std::sync::Arc;
+use std::thread::{self, sleep};
 use std::time;
 use std::{fs::File, io::Write};
 
@@ -114,6 +115,40 @@ where
     }
 }
 
+pub fn unpack_files<F>(
+    workspace_path: &Path,
+    progress_callback: F,
+) -> Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>>
+where
+    F: Fn(MameDataType, u64, u64, String, CallbackType) + Send + Sync + 'static,
+{
+    let progress_callback = Arc::new(progress_callback);
+
+    MameDataType::all_variants()
+        .iter()
+        .map(|&data_type| {
+            let workspace_path = workspace_path.to_path_buf();
+            let progress_callback = Arc::clone(&progress_callback);
+
+            thread::spawn(move || {
+                unpack_file(
+                    data_type,
+                    &workspace_path,
+                    Some(move |unpacked_files, total_files, message, callback_type| {
+                        progress_callback(
+                            data_type,
+                            unpacked_files,
+                            total_files,
+                            message,
+                            callback_type,
+                        );
+                    }),
+                )
+            })
+        })
+        .collect()
+}
+
 fn unpack<F>(
     zip_file_path: &str,
     extract_folder: &Path,
@@ -152,7 +187,7 @@ where
     let file = File::open(archive_path)?;
     let mut archive = ZipArchive::new(file)?;
 
-    let total_size = archive.len() as u64;
+    let total_files = archive.len() as u64;
     let mut progress: u64 = 0;
 
     for i in 0..archive.len() {
@@ -176,7 +211,7 @@ where
         if let Some(ref callback) = progress_callback {
             callback(
                 progress,
-                total_size,
+                total_files,
                 String::from(""),
                 CallbackType::Progress,
             );
@@ -202,7 +237,7 @@ where
 {
     let mut sz = sevenz_rust::SevenZReader::open(archive_path, Password::empty()).unwrap();
 
-    let total_entries = sz.archive().files.len();
+    let total_files = sz.archive().files.len();
     let mut progress_entries: u64 = 0;
 
     let dest = PathBuf::from(destination_folder);
@@ -223,7 +258,7 @@ where
                 if let Some(ref callback) = progress_callback {
                     callback(
                         progress_entries,
-                        total_entries as u64,
+                        total_files as u64,
                         String::from(""),
                         CallbackType::Progress,
                     );
