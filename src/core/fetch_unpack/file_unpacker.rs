@@ -1,17 +1,95 @@
 use sevenz_rust::Password;
 use zip::ZipArchive;
 
-use crate::core::mame_data_types::get_data_type_details;
+use crate::core::callback_progress::{
+    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+};
+use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::file_system_helpers::{
     ensure_folder_exists, find_file_with_pattern, WORKSPACE_PATHS,
 };
-use crate::{CallbackType, MameDataType, ProgressCallback, ProgressInfo, SharedProgressCallback};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 use std::{fs::File, io::Write};
 
+/// Unpacks a data file for a specific `MameDataType` into a designated workspace folder.
+///
+/// This function checks if the required data file for the specified `MameDataType` is already unpacked.
+/// If not, it searches for the corresponding ZIP file in the download directory, and if found,
+/// unpacks it into the appropriate folder. Progress updates during the process can be provided via a callback function.
+///
+/// # Parameters
+/// - `data_type`: The `MameDataType` that specifies the type of data file to unpack (e.g., Series, Categories).
+/// - `workspace_path`: A reference to a `Path` representing the base directory where the data file will be unpacked.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that provides progress updates during the unpacking process.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the path where the unpacked file is located.
+/// - On failure: Contains an error if the file cannot be unpacked, if the ZIP file is not found,
+///   or if there are issues creating the destination folder.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The destination folder cannot be created.
+/// - The required ZIP file is not found in the download folder.
+/// - The unpacking process fails due to reading or writing errors.
+///
+/// # Callback
+/// The progress callback function can be used to monitor the unpacking process in real-time. It receives:
+/// - `progress`: The number of entries processed so far.
+/// - `total`: The total entries of the file being unpacked (if available).
+/// - `message`: A status message indicating the current operation (e.g., "Unpacking file", "Checking if file already unpacked").
+/// - `callback_type`: The type of callback, typically `CallbackType::Progress` for ongoing updates, `CallbackType::Info` for informational messages, `CallbackType::Finish` for completion, or `CallbackType::Error` for errors.
+///
+/// # Example
+/// ```rust
+/// use mame_parser::{unpack_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
+/// use std::error::Error;
+/// use std::path::Path;
+///
+/// fn main() -> Result<(), Box<dyn Error>> {
+///     // Define the workspace path
+///     let workspace_path = Path::new("playground");
+///
+///     // Define the progress callback
+///     let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
+///         // Print progress updates for the unpacking process
+///         match progress_info.callback_type {
+///             CallbackType::Progress => {
+///                 // println!("Unpacking progress: {} / {}", progress_info.progress, progress_info.total);
+///             }
+///             CallbackType::Info => {
+///                 println!("Info: {}", progress_info.message);
+///             }
+///             CallbackType::Finish => {
+///                 println!("Finished: {}", progress_info.message);
+///             }
+///             CallbackType::Error => {
+///                 eprintln!("Error: {}", progress_info.message);
+///             }
+///         }
+///     });
+///
+///     // Unpack the file
+///     let unpacked_file = unpack_file(MameDataType::Series, workspace_path, progress_callback);
+///
+///     // Print the result
+///     match unpacked_file {
+///         Ok(data_file) => {
+///             println!("Unpacked data file: {}", data_file.as_path().to_str().unwrap());
+///         }
+///         Err(e) => {
+///             eprintln!("Error during unpacking: {}", e);
+///         }
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub fn unpack_file(
     data_type: MameDataType,
     workspace_path: &Path,
@@ -30,8 +108,7 @@ pub fn unpack_file(
         return Err(Box::new(err));
     }
 
-    // Check if file already unpacked
-
+    // Checks if file already unpacked
     progress_callback(ProgressInfo {
         progress: 0,
         total: 0,
@@ -56,7 +133,7 @@ pub fn unpack_file(
         return Ok(existing_data_file.into());
     }
 
-    // Check if zip file is present
+    // Checks if zip file is present
     progress_callback(ProgressInfo {
         progress: 0,
         total: 0,
@@ -126,6 +203,88 @@ pub fn unpack_file(
     }
 }
 
+/// Unpacks multiple data files concurrently for all `MameDataType` variants into a designated workspace folder.
+///
+/// This function spawns a new thread for each data type to unpack its respective file, allowing for concurrent unpacking operations.
+/// Progress for each unpacking operation is reported via a provided shared callback function. The function returns a list of
+/// thread handles, each of which can be used to join and retrieve the result of the unpacking operation.
+///
+/// # Parameters
+/// - `workspace_path`: A reference to a `Path` representing the base directory where the data files will be unpacked.
+/// - `progress_callback`: A shared callback function of type `SharedProgressCallback` that tracks the progress of each file unpacking operation.
+///   The callback receives the `data_type` and a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Vec<thread::JoinHandle<Result<PathBuf, Box<dyn Error + Send + Sync>>>>`:
+/// - Each handle represents a thread responsible for unpacking a specific file. The result of the unpacking can be accessed by joining the thread handle.
+/// - On success: Each thread handle contains the path where the unpacked file is located.
+/// - On failure: Each thread handle contains an error if the unpacking fails or if there are issues accessing or creating the destination folder.
+///
+/// # Errors
+/// This function does not directly return errors, but errors may be encountered and reported through the thread handles.
+/// The following errors might occur during the unpacking process:
+/// - The destination folder cannot be created.
+/// - The required ZIP file is not found in the download folder.
+/// - The unpacking process fails due to reading or writing errors.
+///
+/// # Callback
+/// The shared progress callback function can be used to monitor the unpacking process of each file in real-time. It receives:
+/// - `data_type`: An enum value of `MameDataType`, indicating the type of data being unpacked.
+/// - `progress`: The number of entries processed so far.
+/// - `total`: The total entries of the file being unpacked (if available).
+/// - `message`: A status message indicating the current operation (e.g., "Unpacking file", "Checking if file already unpacked").
+/// - `callback_type`: The type of callback, typically `CallbackType::Progress` for ongoing updates, `CallbackType::Info` for informational messages, `CallbackType::Finish` for completion, or `CallbackType::Error` for errors.
+///
+/// # Example
+/// ```rust
+/// use mame_parser::{unpack_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
+/// use std::error::Error;
+/// use std::path::Path;
+/// use std::sync::Arc;
+///
+/// fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+///     // Define the workspace path
+///     let workspace_path = Path::new("playground");
+///
+///     // Define a shared progress callback
+///     let shared_progress_callback: SharedProgressCallback = Arc::new(
+///         move |data_type: MameDataType, progress_info: ProgressInfo| {
+///             // Print progress updates for each file unpacking process
+///             match progress_info.callback_type {
+///                 CallbackType::Progress => {
+///                     // println!("Unpacking {:?}: {} / {}", data_type, progress_info.progress, progress_info.total);
+///                 }
+///                 CallbackType::Info => {
+///                     println!("Info for {:?}: {}", data_type, progress_info.message);
+///                 }
+///                 CallbackType::Finish => {
+///                     println!("Finished unpacking {:?}: {}", data_type, progress_info.message);
+///                 }
+///                 CallbackType::Error => {
+///                     eprintln!("Error unpacking {:?}: {}", data_type, progress_info.message);
+///                 }
+///             }
+///         },
+///     );
+///
+///     // Unpack the files concurrently
+///     let handles = unpack_files(workspace_path, shared_progress_callback);
+///
+///     // Wait for all threads to finish and print results
+///     for handle in handles {
+///         match handle.join().unwrap() {
+///             Ok(path) => {
+///                 println!("Unpacked data file: {}", path.display());
+///             }
+///             Err(e) => {
+///                 eprintln!("Error during unpacking: {}", e);
+///             }
+///         }
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub fn unpack_files(
     workspace_path: &Path,
     progress_callback: SharedProgressCallback,
@@ -151,6 +310,30 @@ pub fn unpack_files(
         .collect()
 }
 
+/// Unpacks an archive file (ZIP or 7z) to the specified destination folder.
+///
+/// This function determines the type of archive file based on its extension (`.zip` or `.7z`)
+/// and calls the appropriate extraction function to unpack its contents into the provided folder.
+/// Progress updates during the unpacking process can be provided via a callback function.
+///
+/// # Parameters
+/// - `zip_file_path`: A string slice (`&str`) representing the path to the archive file to be unpacked.
+///   The file must have a `.zip` or `.7z` extension.
+/// - `extract_folder`: A reference to a `Path` representing the destination folder where the contents of the archive will be extracted.
+/// - `progress_callback`: A reference to a callback function of type `ProgressCallback` that provides progress updates during the unpacking process.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the path to the extracted contents in the destination folder.
+/// - On failure: Contains an error if the file cannot be unpacked due to an unsupported format, reading or writing errors, or issues accessing the destination folder.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The archive format is unsupported (i.e., the file does not have a `.zip` or `.7z` extension).
+/// - The destination folder is invalid or inaccessible.
+/// - The extraction process fails due to reading or writing errors.
+
 fn unpack(
     zip_file_path: &str,
     extract_folder: &Path,
@@ -174,6 +357,29 @@ fn unpack(
         _ => return Err("Unsupported archive format".into()),
     }
 }
+
+/// Extracts the contents of a ZIP archive to the specified destination folder.
+///
+/// This function opens a ZIP file, iterates over its contents, and extracts each file or directory
+/// to the specified destination folder. It provides real-time progress updates via a callback function
+/// during the extraction process.
+///
+/// # Parameters
+/// - `archive_path`: A string slice (`&str`) representing the path to the ZIP archive file to be extracted.
+/// - `destination_folder`: A string slice (`&str`) representing the destination folder where the contents of the archive will be extracted.
+/// - `progress_callback`: A reference to a callback function of type `ProgressCallback` that provides progress updates during the extraction process.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the path to the folder where the contents were extracted.
+/// - On failure: Contains an error if the extraction process fails due to reading errors, writing errors, or issues accessing the destination folder.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The ZIP archive cannot be opened or read.
+/// - The destination folder cannot be created or is invalid.
+/// - There are errors during file extraction, such as reading from the archive or writing to the disk.
 
 fn extract_zip(
     archive_path: &str,
@@ -223,6 +429,29 @@ fn extract_zip(
     Ok(destination_folder.into())
 }
 
+/// Extracts the contents of a 7z archive to the specified destination folder.
+///
+/// This function opens a 7z archive file, iterates over its contents, and extracts each file or directory
+/// to the specified destination folder. Progress updates during the extraction process can be provided
+/// via a callback function.
+///
+/// # Parameters
+/// - `archive_path`: A string slice (`&str`) representing the path to the 7z archive file to be extracted.
+/// - `destination_folder`: A string slice (`&str`) representing the destination folder where the contents of the archive will be extracted.
+/// - `progress_callback`: A reference to a callback function of type `ProgressCallback` that provides progress updates during the extraction process.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the path to the folder where the contents were extracted.
+/// - On failure: Contains an error if the extraction process fails due to reading errors, writing errors, or issues accessing the destination folder.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The 7z archive cannot be opened or read.
+/// - The destination folder cannot be created or is invalid.
+/// - There are errors during file extraction, such as reading from the archive or writing to the disk.
+/// - The provided 7z archive format is unsupported or corrupted.
 fn extract_7zip(
     archive_path: &str,
     destination_folder: &str,

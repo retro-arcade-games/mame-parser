@@ -31,6 +31,25 @@ pub(crate) fn ensure_folder_exists(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Searches for a file within a specified folder that matches a given regex pattern.
+///
+/// This function recursively walks through the specified folder, looking for a file name that matches
+/// the provided regex pattern. If a matching file is found, the function returns its path as a string.
+///
+/// # Parameters
+/// - `folder`: A string slice (`&str`) representing the path to the folder where the search will be conducted.
+/// - `pattern`: A reference to a `regex::Regex` object that specifies the pattern to match against file names.
+///
+/// # Returns
+/// Returns a `Result<String, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the path of the first matching file found, represented as a `String`.
+/// - On failure: Contains an error if no file matching the pattern is found in the specified folder.
+///
+/// # Errors
+/// This function will return an error if:
+/// - No file in the specified folder matches the provided regex pattern.
+/// - There are issues accessing the folder or reading its contents (handled implicitly by the iterator).
+
 pub(crate) fn find_file_with_pattern(
     folder: &str,
     pattern: &regex::Regex,

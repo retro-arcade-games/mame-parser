@@ -22,8 +22,8 @@ use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS}
 /// # Parameters
 /// - `data_type`: The `MameDataType` that specifies which data file to download (e.g., ROMs, DAT files).
 /// - `workspace_path`: A reference to a `Path` representing the base directory where the file will be saved.
-/// - `progress_callback`: An optional callback function of type `F` that tracks progress and provides status updates. The callback
-///   receives the following parameters: `(downloaded_bytes, total_bytes, status_message, callback_type)`.
+/// - `progress_callback`: An optional callback function of type `ProgressCallback` that tracks progress and provides status updates.
+///   The callback receives a `ProgressInfo` struct containing `downloaded_bytes`, `total_bytes`, `status_message`, and `callback_type`.
 ///
 /// # Returns
 /// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
@@ -44,6 +44,53 @@ use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS}
 /// - `status_message`: A status message indicating the current operation (e.g., "Searching URL", "Downloading file").
 /// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`,`CallbackType::Progress`, or `CallbackType::Finish`.
 ///
+/// # Example
+/// ```rust
+/// use mame_parser::{download_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
+/// use std::error::Error;
+/// use std::path::Path;
+///
+/// fn main() -> Result<(), Box<dyn Error>> {
+///     // Define the workspace path
+///     let workspace_path = Path::new("playground");
+///
+///     // Define the progress callback
+///     let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
+///         match progress_info.callback_type {
+///             CallbackType::Progress => {
+///                 // println!("Progress: {} / {}", progress_info.progress, progress_info.total);
+///             }
+///             CallbackType::Info => {
+///                 println!("Info: {}", progress_info.message);
+///             }
+///             CallbackType::Finish => {
+///                 println!("Finished: {}", progress_info.message);
+///             }
+///             CallbackType::Error => {
+///                 eprintln!("Error: {}", progress_info.message);
+///             }
+///         }
+///     });
+///
+///     // Download the file
+///     let downloaded_file = download_file(MameDataType::Series, workspace_path, progress_callback);
+///
+///     // Print the result
+///     match downloaded_file {
+///         Ok(data_file) => {
+///             println!(
+///                 "Downloaded data file: {}",
+///                 data_file.as_path().to_str().unwrap()
+///             );
+///         }
+///         Err(e) => {
+///             eprintln!("Error during downloading: {}", e);
+///         }
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub fn download_file(
     data_type: MameDataType,
     workspace_path: &Path,
@@ -123,7 +170,7 @@ pub fn download_file(
 ///
 /// # Parameters
 /// - `workspace_path`: A reference to a `Path` representing the base directory where the files will be saved.
-/// - `progress_callback`: A callback function of type `F` that tracks the progress of each file download. The callback
+/// - `progress_callback`: A callback function of type `SharedProgressCallback` that tracks the progress of each file download. The callback
 ///   receives the following parameters: `(data_type, downloaded_bytes, total_bytes, status_message, callback_type)`.
 ///
 /// # Returns
@@ -141,7 +188,56 @@ pub fn download_file(
 /// - `status_message`: A status message (e.g., progress or completion status).
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
+/// # Example
+/// ```rust
+/// use mame_parser::{download_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
+/// use std::error::Error;
+/// use std::path::Path;
+/// use std::sync::Arc;
 ///
+/// fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+///     // Define the workspace path
+///     let workspace_path = Path::new("playground");
+///
+///     // Define a shared progress callback
+///     let shared_progress_callback: SharedProgressCallback = Arc::new(
+///         move |data_type: MameDataType, progress_info: ProgressInfo| {
+///             // Print progress updates for each file
+///             match progress_info.callback_type {
+///                 CallbackType::Progress => {
+///                     // println!("Downloading {:?}: {} / {}", data_type, progress_info.progress, progress_info.total);
+///                 }
+///                 CallbackType::Info => {
+///                     println!("Info for {:?}: {}", data_type, progress_info.message);
+///                 }
+///                 CallbackType::Finish => {
+///                     println!("Finished downloading {:?}: {}", data_type, progress_info.message);
+///                 }
+///                 CallbackType::Error => {
+///                     eprintln!("Error downloading {:?}: {}", data_type, progress_info.message);
+///                 }
+///             }
+///         },
+///     );
+///
+///     // Download the files concurrently
+///     let handles = download_files(workspace_path, shared_progress_callback);
+///
+///     // Wait for all threads to finish
+///     for handle in handles {
+///         match handle.join().unwrap() {
+///             Ok(path) => {
+///                 println!("Downloaded file: {}", path.display());
+///             }
+///             Err(e) => {
+///                 eprintln!("Error during download: {}", e);
+///             }
+///         }
+///     }
+///
+///     Ok(())
+/// }
+/// ```
 pub fn download_files(
     workspace_path: &Path,
     progress_callback: SharedProgressCallback,
@@ -177,8 +273,8 @@ pub fn download_files(
 /// - `url`: A string slice (`&str`) representing the URL of the file to download. For example:
 ///   `https://example.com/file.zip`.
 /// - `destination_folder`: A reference to a `Path` representing the folder where the downloaded file will be saved.
-/// - `progress_callback`: An optional callback function of type `F` that tracks the progress of the download. The callback
-///   receives the following parameters: `(downloaded_bytes, total_bytes, status_message, callback_type)`.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that tracks the progress of the download.
+///   The callback receives a `ProgressInfo` struct containing `downloaded_bytes`, `total_bytes`, `status_message`, and `callback_type`.
 ///
 /// # Returns
 /// Returns a `Result<PathBuf, Box<dyn Error + Send + Sync>>`:
@@ -195,9 +291,9 @@ pub fn download_files(
 /// The progress callback function can be used to monitor the download progress in real-time. It receives:
 /// - `downloaded_bytes`: The number of bytes downloaded so far.
 /// - `total_bytes`: The total size of the file being downloaded (if available).
-/// - `status_message`: A status message, which is currently set to an empty string.
-/// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
-///
+/// - `status_message`: A status message, which is currently set to an empty string during the download process and updated upon completion.
+/// - `callback_type`: The type of callback, typically `CallbackType::Progress` to indicate ongoing progress, or other variants like `CallbackType::Finish` to signal completion or `CallbackType::Error` for errors.
+
 fn download(
     url: &str,
     destination_folder: &Path,
