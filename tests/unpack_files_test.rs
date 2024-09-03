@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use mame_parser::{unpack_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
+    use mame_parser::{
+        unpack_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback,
+    };
     use std::error::Error;
     use std::path::Path;
     use std::sync::Arc;
@@ -30,7 +32,10 @@ mod tests {
                         assert!(progress_info.progress == progress_info.total);
                     }
                     CallbackType::Error => {
-                        panic!("Error during unpacking for {:?}: {}", data_type, progress_info.message);
+                        panic!(
+                            "Error during unpacking for {:?}: {}",
+                            data_type, progress_info.message
+                        );
                     }
                 }
             },

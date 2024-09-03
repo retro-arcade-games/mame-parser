@@ -39,7 +39,11 @@ mod tests {
         match unpacked_file {
             Ok(file_path) => {
                 // Assert that the unpacked file path exists
-                assert!(file_path.exists(), "Unpacked file does not exist: {:?}", file_path);
+                assert!(
+                    file_path.exists(),
+                    "Unpacked file does not exist: {:?}",
+                    file_path
+                );
             }
             Err(e) => {
                 panic!("Error during unpacking: {}", e);
