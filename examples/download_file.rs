@@ -3,6 +3,7 @@ use mame_parser::{download_file, CallbackType, MameDataType, ProgressCallback, P
 use std::error::Error;
 use std::path::Path;
 
+#[docify::export]
 fn main() -> Result<(), Box<dyn Error>> {
     // Define the workspace path
     let workspace_path = Path::new("playground");

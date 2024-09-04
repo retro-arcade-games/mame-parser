@@ -23,6 +23,7 @@ zip = "0.5.13"
 sevenz-rust = "0.6.1"
 quick-xml = "0.23"
 lazy_static = "1.4"
+docify = "0.2.8"
 
 [dev-dependencies]
 indicatif = "0.16"

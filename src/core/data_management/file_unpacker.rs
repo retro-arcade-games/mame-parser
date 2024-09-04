@@ -46,50 +46,8 @@ use std::{fs::File, io::Write};
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` for ongoing updates, `CallbackType::Info` for informational messages, `CallbackType::Finish` for completion, or `CallbackType::Error` for errors.
 ///
 /// # Example
-/// ```rust
-/// use mame_parser::{unpack_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
-/// use std::error::Error;
-/// use std::path::Path;
+#[doc = docify::embed!("examples/unpack_file.rs", main)]
 ///
-/// fn main() -> Result<(), Box<dyn Error>> {
-///     // Define the workspace path
-///     let workspace_path = Path::new("playground");
-///
-///     // Define the progress callback
-///     let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
-///         // Print progress updates for the unpacking process
-///         match progress_info.callback_type {
-///             CallbackType::Progress => {
-///                 // println!("Unpacking progress: {} / {}", progress_info.progress, progress_info.total);
-///             }
-///             CallbackType::Info => {
-///                 println!("Info: {}", progress_info.message);
-///             }
-///             CallbackType::Finish => {
-///                 println!("Finished: {}", progress_info.message);
-///             }
-///             CallbackType::Error => {
-///                 eprintln!("Error: {}", progress_info.message);
-///             }
-///         }
-///     });
-///
-///     // Unpack the file
-///     let unpacked_file = unpack_file(MameDataType::Series, workspace_path, progress_callback);
-///
-///     // Print the result
-///     match unpacked_file {
-///         Ok(data_file) => {
-///             println!("Unpacked data file: {}", data_file.as_path().to_str().unwrap());
-///         }
-///         Err(e) => {
-///             eprintln!("Error during unpacking: {}", e);
-///         }
-///     }
-///
-///     Ok(())
-/// }
-/// ```
 pub fn unpack_file(
     data_type: MameDataType,
     workspace_path: &Path,
@@ -236,55 +194,8 @@ pub fn unpack_file(
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` for ongoing updates, `CallbackType::Info` for informational messages, `CallbackType::Finish` for completion, or `CallbackType::Error` for errors.
 ///
 /// # Example
-/// ```rust
-/// use mame_parser::{unpack_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
-/// use std::error::Error;
-/// use std::path::Path;
-/// use std::sync::Arc;
+#[doc = docify::embed!("examples/unpack_files.rs", main)]
 ///
-/// fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-///     // Define the workspace path
-///     let workspace_path = Path::new("playground");
-///
-///     // Define a shared progress callback
-///     let shared_progress_callback: SharedProgressCallback = Arc::new(
-///         move |data_type: MameDataType, progress_info: ProgressInfo| {
-///             // Print progress updates for each file unpacking process
-///             match progress_info.callback_type {
-///                 CallbackType::Progress => {
-///                     // println!("Unpacking {:?}: {} / {}", data_type, progress_info.progress, progress_info.total);
-///                 }
-///                 CallbackType::Info => {
-///                     println!("Info for {:?}: {}", data_type, progress_info.message);
-///                 }
-///                 CallbackType::Finish => {
-///                     println!("Finished unpacking {:?}: {}", data_type, progress_info.message);
-///                 }
-///                 CallbackType::Error => {
-///                     eprintln!("Error unpacking {:?}: {}", data_type, progress_info.message);
-///                 }
-///             }
-///         },
-///     );
-///
-///     // Unpack the files concurrently
-///     let handles = unpack_files(workspace_path, shared_progress_callback);
-///
-///     // Wait for all threads to finish and print results
-///     for handle in handles {
-///         match handle.join().unwrap() {
-///             Ok(path) => {
-///                 println!("Unpacked data file: {}", path.display());
-///             }
-///             Err(e) => {
-///                 eprintln!("Error during unpacking: {}", e);
-///             }
-///         }
-///     }
-///
-///     Ok(())
-/// }
-/// ```
 pub fn unpack_files(
     workspace_path: &Path,
     progress_callback: SharedProgressCallback,

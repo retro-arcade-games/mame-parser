@@ -45,52 +45,8 @@ use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS}
 /// - `callback_type`: The type of callback, typically `CallbackType::Info`, `CallbackType::Error`,`CallbackType::Progress`, or `CallbackType::Finish`.
 ///
 /// # Example
-/// ```rust
-/// use mame_parser::{download_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
-/// use std::error::Error;
-/// use std::path::Path;
+#[doc = docify::embed!("examples/download_file.rs", main)]
 ///
-/// fn main() -> Result<(), Box<dyn Error>> {
-///     // Define the workspace path
-///     let workspace_path = Path::new("playground");
-///
-///     // Define the progress callback
-///     let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
-///         match progress_info.callback_type {
-///             CallbackType::Progress => {
-///                 // println!("Progress: {} / {}", progress_info.progress, progress_info.total);
-///             }
-///             CallbackType::Info => {
-///                 println!("Info: {}", progress_info.message);
-///             }
-///             CallbackType::Finish => {
-///                 println!("Finished: {}", progress_info.message);
-///             }
-///             CallbackType::Error => {
-///                 eprintln!("Error: {}", progress_info.message);
-///             }
-///         }
-///     });
-///
-///     // Download the file
-///     let downloaded_file = download_file(MameDataType::Series, workspace_path, progress_callback);
-///
-///     // Print the result
-///     match downloaded_file {
-///         Ok(data_file) => {
-///             println!(
-///                 "Downloaded data file: {}",
-///                 data_file.as_path().to_str().unwrap()
-///             );
-///         }
-///         Err(e) => {
-///             eprintln!("Error during downloading: {}", e);
-///         }
-///     }
-///
-///     Ok(())
-/// }
-/// ```
 pub fn download_file(
     data_type: MameDataType,
     workspace_path: &Path,
@@ -189,55 +145,8 @@ pub fn download_file(
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` in this context.
 ///
 /// # Example
-/// ```rust
-/// use mame_parser::{download_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
-/// use std::error::Error;
-/// use std::path::Path;
-/// use std::sync::Arc;
+#[doc = docify::embed!("examples/download_files.rs", main)]
 ///
-/// fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-///     // Define the workspace path
-///     let workspace_path = Path::new("playground");
-///
-///     // Define a shared progress callback
-///     let shared_progress_callback: SharedProgressCallback = Arc::new(
-///         move |data_type: MameDataType, progress_info: ProgressInfo| {
-///             // Print progress updates for each file
-///             match progress_info.callback_type {
-///                 CallbackType::Progress => {
-///                     // println!("Downloading {:?}: {} / {}", data_type, progress_info.progress, progress_info.total);
-///                 }
-///                 CallbackType::Info => {
-///                     println!("Info for {:?}: {}", data_type, progress_info.message);
-///                 }
-///                 CallbackType::Finish => {
-///                     println!("Finished downloading {:?}: {}", data_type, progress_info.message);
-///                 }
-///                 CallbackType::Error => {
-///                     eprintln!("Error downloading {:?}: {}", data_type, progress_info.message);
-///                 }
-///             }
-///         },
-///     );
-///
-///     // Download the files concurrently
-///     let handles = download_files(workspace_path, shared_progress_callback);
-///
-///     // Wait for all threads to finish
-///     for handle in handles {
-///         match handle.join().unwrap() {
-///             Ok(path) => {
-///                 println!("Downloaded file: {}", path.display());
-///             }
-///             Err(e) => {
-///                 eprintln!("Error during download: {}", e);
-///             }
-///         }
-///     }
-///
-///     Ok(())
-/// }
-/// ```
 pub fn download_files(
     workspace_path: &Path,
     progress_callback: SharedProgressCallback,

@@ -4,6 +4,7 @@ use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;
 
+#[docify::export]
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Define the workspace path
     let workspace_path = Path::new("playground");
