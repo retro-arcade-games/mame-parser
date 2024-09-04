@@ -1,6 +1,3 @@
-use sevenz_rust::Password;
-use zip::ZipArchive;
-
 use crate::core::callback_progress::{
     CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
 };
@@ -8,11 +5,13 @@ use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::file_system_helpers::{
     ensure_folder_exists, find_file_with_pattern, WORKSPACE_PATHS,
 };
+use sevenz_rust::Password;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 use std::{fs::File, io::Write};
+use zip::ZipArchive;
 
 /// Unpacks a data file for a specific `MameDataType` into a designated workspace folder.
 ///

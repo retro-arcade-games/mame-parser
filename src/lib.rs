@@ -29,10 +29,8 @@
 //! * **MAME Data Types**
 //!   * [`MameDataType`](enum.MameDataType.html) - Enum representing the different types of MAME data files supported by the library.
 //!
-
 mod core;
 mod helpers;
-
 pub use core::callback_progress::{
     CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
 };

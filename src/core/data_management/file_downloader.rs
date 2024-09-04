@@ -1,3 +1,9 @@
+use crate::core::callback_progress::{
+    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+};
+use crate::core::mame_data_types::{get_data_type_details, MameDataType};
+use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
+use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS};
 use reqwest::blocking::Client;
 use std::error::Error;
 use std::fs::File;
@@ -5,13 +11,6 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
-
-use crate::core::callback_progress::{
-    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
-};
-use crate::core::mame_data_types::{get_data_type_details, MameDataType};
-use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
-use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS};
 
 /// Downloads a specific MAME data file based on the provided data type and saves it to the workspace.
 ///

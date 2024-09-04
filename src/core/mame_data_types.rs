@@ -1,15 +1,12 @@
-use std::collections::HashMap;
-use std::error::Error;
-
-use regex::Regex;
-
 use crate::core::callback_progress::ProgressCallback;
+use crate::core::models::Machine;
 use crate::core::readers::{
     catver_reader, history_reader, languages_reader, mame_reader, nplayers_reader,
     resources_reader, series_reader,
 };
-
-use crate::core::models::Machine;
+use regex::Regex;
+use std::collections::HashMap;
+use std::error::Error;
 
 /// Represents different types of MAME data that can be downloaded and processed.
 ///

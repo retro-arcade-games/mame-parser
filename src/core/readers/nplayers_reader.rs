@@ -1,11 +1,10 @@
+use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
+use crate::core::filters::nplayers_normalization;
+use crate::core::models::Machine;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::filters::nplayers_normalization;
-use crate::core::models::Machine;
 
 pub fn read_nplayers_file(
     file_path: &str,

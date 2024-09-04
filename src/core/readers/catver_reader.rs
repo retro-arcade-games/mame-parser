@@ -1,9 +1,9 @@
+use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
+use crate::core::models::Machine;
+use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, error::Error};
-
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::models::Machine;
 
 /// Reads and processes a "catver.ini" file to extract machine categories and subcategories.
 ///
@@ -87,14 +87,15 @@ pub fn read_catver_file(
 
     let to_ignore = ["[", ";", "", " "];
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     let mut processed_count = 0;
     let batch = total_elements / 10;
 
     for line in reader.lines() {
-        let line = line?;
+        let line = line.with_context(|| format!("Failed to read line in file: {}", file_path))?;
         let trimmed = line.trim();
         let first_char = trimmed.chars().next().unwrap_or(' ');
 
@@ -172,14 +173,14 @@ pub fn read_catver_file(
 /// - There are I/O errors while reading the file.
 ///
 fn count_total_elements(file_path: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
     let mut count = 0;
 
     for line in reader.lines() {
-        let line = line?;
-        let trimmed = line.trim();
-        if trimmed.contains('=') {
+        let line = line.with_context(|| format!("Failed to read a line in file: {}", file_path))?;
+        if line.trim().contains('=') {
             count += 1;
         }
     }
