@@ -1,4 +1,15 @@
+use std::collections::HashMap;
+use std::error::Error;
+
 use regex::Regex;
+
+use crate::core::callback_progress::ProgressCallback;
+use crate::core::readers::{
+    catver_reader, history_reader, languages_reader, mame_reader, nplayers_reader,
+    resources_reader, series_reader,
+};
+
+use crate::core::models::Machine;
 
 /// Represents different types of MAME data that can be downloaded and processed.
 ///
@@ -77,7 +88,10 @@ pub struct MameDataTypeDetails {
     pub source_match: &'static str,
     pub zip_file_pattern: Regex,
     pub data_file_pattern: Regex,
-    // pub read_function: fn(&str) -> Result<(), Box<dyn std::error::Error>>,
+    pub read_function: fn(
+        file_path: &str,
+        progress_callback: ProgressCallback,
+    ) -> Result<HashMap<String, Machine>, Box<dyn Error + Send + Sync>>,
 }
 
 /// Retrieves the details for a given `MameDataType`.
@@ -106,7 +120,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "download/?tipo=dat_mame&file=/dats/MAME/packs/MAME_Dats",
             zip_file_pattern: Regex::new(r"^MAME_Dats_\d+\.7z$").unwrap(),
             data_file_pattern: Regex::new(r"MAME\s+[0-9]*\.[0-9]+\.dat").unwrap(),
-            // read_function: mame_reader::read_mame_file,
+            read_function: mame_reader::read_mame_file,
         },
         MameDataType::Languages => MameDataTypeDetails {
             name: "Languages",
@@ -114,7 +128,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "download",
             zip_file_pattern: Regex::new(r"^pS_Languages_\d+\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"languages.ini").unwrap(),
-            // read_function: languages_reader::read_languages_file,
+            read_function: languages_reader::read_languages_file,
         },
         MameDataType::NPlayers => MameDataTypeDetails {
             name: "NPlayers",
@@ -122,7 +136,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "files",
             zip_file_pattern: Regex::new(r"^nplayers0\d+\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"nplayers.ini").unwrap(),
-            // read_function: nplayers_reader::read_nplayers_file,
+            read_function: nplayers_reader::read_nplayers_file,
         },
         MameDataType::Catver => MameDataTypeDetails {
             name: "Catver",
@@ -130,7 +144,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "download",
             zip_file_pattern: Regex::new(r"^pS_CatVer_\d+\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"catver.ini").unwrap(),
-            // read_function: catver_reader::read_catver_file,
+            read_function: catver_reader::read_catver_file,
         },
         MameDataType::Series => MameDataTypeDetails {
             name: "Series",
@@ -138,7 +152,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "download",
             zip_file_pattern: Regex::new(r"^pS_Series_\d+\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"series.ini").unwrap(),
-            // read_function: series_reader::read_series_file,
+            read_function: series_reader::read_series_file,
         },
         MameDataType::History => MameDataTypeDetails {
             name: "History",
@@ -146,7 +160,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "dats",
             zip_file_pattern: Regex::new(r"^history\d+\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"history.xml").unwrap(),
-            // read_function: history_reader::read_history_file,
+            read_function: history_reader::read_history_file,
         },
         MameDataType::Resources => MameDataTypeDetails {
             name: "Resources",
@@ -154,7 +168,7 @@ pub(crate) fn get_data_type_details(data_type: MameDataType) -> MameDataTypeDeta
             source_match: "download/?tipo=dat_resource&file=/dats/cmdats/pS_AllProject_",
             zip_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.zip$").unwrap(),
             data_file_pattern: Regex::new(r"^pS_AllProject_\d{8}_\d+_\([a-zA-Z]+\)\.dat$").unwrap(),
-            // read_function: resources_reader::read_resources_file,
+            read_function: resources_reader::read_resources_file,
         },
     }
 }

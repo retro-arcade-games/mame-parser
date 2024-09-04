@@ -65,8 +65,118 @@ pub struct Machine {
     pub resources: Vec<Resource>,
 }
 
+impl Machine {
+    /// Creates a new `Machine` instance with the specified name.
+    pub fn new(name: String) -> Self {
+        Machine {
+            name,
+            source_file: None,
+            rom_of: None,
+            clone_of: None,
+            is_bios: None,
+            is_device: None,
+            runnable: None,
+            is_mechanical: None,
+            sample_of: None,
+            description: None,
+            year: None,
+            manufacturer: None,
+            bios_sets: Vec::new(),
+            roms: Vec::new(),
+            device_refs: Vec::new(),
+            software_list: Vec::new(),
+            samples: Vec::new(),
+            driver_status: None,
+            languages: Vec::new(),
+            players: None,
+            series: None,
+            category: None,
+            subcategory: None,
+            is_mature: None,
+            history_sections: Vec::new(),
+            disks: Vec::new(),
+            extended_data: Some(Default::default()),
+            resources: Vec::new(),
+        }
+    }
+    /// Combines the metadata of this machine with another machine.
+    pub fn combine(&mut self, other: &Machine) {
+        if self.source_file.is_none() {
+            self.source_file = other.source_file.clone();
+        }
+        if self.rom_of.is_none() {
+            self.rom_of = other.rom_of.clone();
+        }
+        if self.clone_of.is_none() {
+            self.clone_of = other.clone_of.clone();
+        }
+        if self.is_bios.is_none() {
+            self.is_bios = other.is_bios;
+        }
+        if self.is_device.is_none() {
+            self.is_device = other.is_device;
+        }
+        if self.runnable.is_none() {
+            self.runnable = other.runnable;
+        }
+        if self.is_mechanical.is_none() {
+            self.is_mechanical = other.is_mechanical;
+        }
+        if self.sample_of.is_none() {
+            self.sample_of = other.sample_of.clone();
+        }
+        if self.description.is_none() {
+            self.description = other.description.clone();
+        }
+        if self.year.is_none() {
+            self.year = other.year.clone();
+        }
+        if self.manufacturer.is_none() {
+            self.manufacturer = other.manufacturer.clone();
+        }
+        if self.driver_status.is_none() {
+            self.driver_status = other.driver_status.clone();
+        }
+        if self.players.is_none() {
+            self.players = other.players.clone();
+        }
+        if self.series.is_none() {
+            self.series = other.series.clone();
+        }
+        if self.category.is_none() {
+            self.category = other.category.clone();
+        }
+        if self.subcategory.is_none() {
+            self.subcategory = other.subcategory.clone();
+        }
+        if self.is_mature.is_none() {
+            self.is_mature = other.is_mature;
+        }
+
+        self.bios_sets.extend(other.bios_sets.clone());
+        self.roms.extend(other.roms.clone());
+        self.device_refs.extend(other.device_refs.clone());
+        self.software_list.extend(other.software_list.clone());
+        self.samples.extend(other.samples.clone());
+        self.languages.extend(other.languages.clone());
+        self.history_sections.extend(other.history_sections.clone());
+        self.disks.extend(other.disks.clone());
+        self.resources.extend(other.resources.clone());
+
+        match (&mut self.extended_data, &other.extended_data) {
+            (Some(self_data), Some(other_data)) => {
+                self_data.combine(other_data);
+            }
+            (None, Some(other_data)) => {
+                self.extended_data = Some(other_data.clone());
+            }
+            _ => {}
+        }
+    }
+}
+
 /// BIOS set associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BiosSet {
     /// The name of the BIOS set.
     pub name: String,
@@ -75,7 +185,7 @@ pub struct BiosSet {
 }
 
 /// ROM file associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rom {
     /// The name of the ROM file.
     pub name: String,
@@ -92,28 +202,28 @@ pub struct Rom {
 }
 
 /// Device reference associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeviceRef {
     /// The name of the device.
     pub name: String,
 }
 
 /// Software list associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Software {
     /// The name of the software.
     pub name: String,
 }
 
 /// Sample file associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sample {
     /// The name of the sample file.
     pub name: String,
 }
 
 /// Disk data associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Disk {
     /// The name of the disk.
     pub name: String,
@@ -128,7 +238,7 @@ pub struct Disk {
 }
 
 /// Historical section or trivia associated with a MAME machine.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HistorySection {
     /// The name of the history section.
     pub name: String,
@@ -156,8 +266,29 @@ pub struct ExtendedData {
     pub year: Option<String>,
 }
 
+impl ExtendedData {
+    /// Combines the metadata of this extended data with another extended data.
+    pub fn combine(&mut self, other: &ExtendedData) {
+        if self.name.is_none() {
+            self.name = other.name.clone();
+        }
+        if self.manufacturer.is_none() {
+            self.manufacturer = other.manufacturer.clone();
+        }
+        if self.players.is_none() {
+            self.players = other.players.clone();
+        }
+        if self.is_parent.is_none() {
+            self.is_parent = other.is_parent;
+        }
+        if self.year.is_none() {
+            self.year = other.year.clone();
+        }
+    }
+}
+
 /// External resource associated with a MAME machine, such as images or videos.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Resource {
     /// The type of the resource (e.g., "image", "video").
     pub type_: String,

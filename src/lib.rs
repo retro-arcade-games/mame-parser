@@ -39,5 +39,6 @@ pub use core::callback_progress::{
     CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
 };
 pub use core::fetch_unpack::file_downloader::{download_file, download_files};
+pub use core::fetch_unpack::file_reader::{read_file, read_files};
 pub use core::fetch_unpack::file_unpacker::{unpack_file, unpack_files};
 pub use core::mame_data_types::MameDataType;
