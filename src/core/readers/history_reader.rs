@@ -1,5 +1,7 @@
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::models::{HistorySection, Machine};
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
+    core_models::{HistorySection, Machine},
+};
 use anyhow::{Context, Result};
 use quick_xml::events::Event;
 use quick_xml::Reader;

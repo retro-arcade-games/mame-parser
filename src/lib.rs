@@ -21,7 +21,7 @@ mod core;
 mod helpers;
 
 /// Module to handle the callback functions used for progress tracking.
-pub use core::callback_progress as progress;
+pub use core::models::callback_progress as progress;
 /// Management of MAME data files, including downloading, reading, and unpacking.
 pub mod file_handling {
     pub use crate::core::data_management::file_downloader::{download_file, download_files};
@@ -30,8 +30,8 @@ pub mod file_handling {
 }
 /// Data models and types used for MAME data processing.
 pub mod models {
-    pub use crate::core::mame_data_types::MameDataType;
-    pub use crate::core::models::*;
+    pub use crate::core::models::core_models::*;
+    pub use crate::core::models::mame_data_types::MameDataType;
 }
 /// Module for reading and parsing MAME data files.
 pub mod readers {

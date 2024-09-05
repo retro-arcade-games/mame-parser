@@ -1,6 +1,7 @@
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::models::Machine;
-use crate::core::models::Resource;
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
+    core_models::{Machine, Resource},
+};
 use anyhow::Context;
 use quick_xml::events::Event;
 use quick_xml::Reader;

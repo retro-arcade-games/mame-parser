@@ -1,7 +1,7 @@
-use crate::core::callback_progress::{
-    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+    mame_data_types::{get_data_type_details, MameDataType},
 };
-use crate::core::mame_data_types::{get_data_type_details, MameDataType};
 use crate::helpers::file_system_helpers::{
     ensure_folder_exists, find_file_with_pattern, WORKSPACE_PATHS,
 };
@@ -40,7 +40,7 @@ use zip::ZipArchive;
 /// # Callback
 /// The progress callback function can be used to monitor the unpacking process in real-time. It receives:
 /// - `progress`: The number of entries processed so far.
-/// - `total`: The total entries of the file being unpacked (if available).
+/// - `total`: The total entries of the file being unpacked.
 /// - `message`: A status message indicating the current operation (e.g., "Unpacking file", "Checking if file already unpacked").
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` for ongoing updates, `CallbackType::Info` for informational messages, `CallbackType::Finish` for completion, or `CallbackType::Error` for errors.
 ///

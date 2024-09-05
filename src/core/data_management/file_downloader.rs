@@ -1,9 +1,11 @@
-use crate::core::callback_progress::{
-    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+    mame_data_types::{get_data_type_details, MameDataType},
 };
-use crate::core::mame_data_types::{get_data_type_details, MameDataType};
-use crate::helpers::data_source_helper::{get_data_source, get_file_name_from_url};
-use crate::helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS};
+use crate::helpers::{
+    data_source_helper::{get_data_source, get_file_name_from_url},
+    file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS},
+};
 use reqwest::blocking::Client;
 use std::error::Error;
 use std::fs::File;

@@ -1,6 +1,10 @@
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::filters::{machine_names_normalization, manufacturers_normalization};
-use crate::core::models::{BiosSet, DeviceRef, Disk, ExtendedData, Machine, Rom, Sample, Software};
+use crate::core::{
+    data_cleanup::{machine_names_normalization, manufacturers_normalization},
+    models::{
+        callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
+        core_models::{BiosSet, DeviceRef, Disk, ExtendedData, Machine, Rom, Sample, Software},
+    },
+};
 use anyhow::Context;
 use quick_xml::events::Event;
 use quick_xml::Reader;

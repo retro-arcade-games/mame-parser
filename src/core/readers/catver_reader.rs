@@ -1,5 +1,7 @@
-use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
-use crate::core::models::Machine;
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
+    core_models::Machine,
+};
 use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};

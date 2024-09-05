@@ -20,7 +20,7 @@
 ///
 /// # Errors
 /// This function does not return errors. It always returns a `String`, either processed or empty.
-pub fn normalize_name(description: &Option<String>) -> String {
+pub(crate) fn normalize_name(description: &Option<String>) -> String {
     if description.is_none() {
         return String::new();
     }

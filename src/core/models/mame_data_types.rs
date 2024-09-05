@@ -1,8 +1,9 @@
-use crate::core::callback_progress::ProgressCallback;
-use crate::core::models::Machine;
-use crate::core::readers::{
-    catver_reader, history_reader, languages_reader, mame_reader, nplayers_reader,
-    resources_reader, series_reader,
+use crate::core::{
+    models::{callback_progress::ProgressCallback, core_models::Machine},
+    readers::{
+        catver_reader, history_reader, languages_reader, mame_reader, nplayers_reader,
+        resources_reader, series_reader,
+    },
 };
 use regex::Regex;
 use std::collections::HashMap;

@@ -1,8 +1,8 @@
-use crate::core::callback_progress::{
-    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
+use crate::core::models::{
+    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+    core_models::Machine,
+    mame_data_types::{get_data_type_details, MameDataType},
 };
-use crate::core::mame_data_types::{get_data_type_details, MameDataType};
-use crate::core::models::Machine;
 use crate::helpers::file_system_helpers::{find_file_with_pattern, WORKSPACE_PATHS};
 use std::collections::HashMap;
 use std::error::Error;
@@ -36,8 +36,8 @@ use std::thread;
 ///
 /// # Callback
 /// The progress callback function provides real-time updates on the reading process and other status information. It receives:
-/// - `progress`: The current progress of the operation (e.g., number of files processed).
-/// - `total`: The total number of items to be processed (if available).
+/// - `progress`: The current progress of the operation (e.g., number of entries).
+/// - `total`: The total number of items to be processed.
 /// - `message`: A status message indicating the current operation (e.g., "Checking if data file is present", "Reading file").
 /// — `callback_type`: The type of callback, such as `CallbackType::Info`, `CallbackType::Error`, `CallbackType::Progress`, or `CallbackType::Finish`.
 ///

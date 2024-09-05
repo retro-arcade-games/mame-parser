@@ -35,7 +35,7 @@ lazy_static! {
 /// - `RE_PUNCTUATION`: Matches trailing punctuation that should be removed.
 /// - `NEEDS_CLEANING`: Matches terms or patterns that indicate the name requires cleaning.
 
-pub fn normalize_manufacturer(manufacturer: &Option<String>) -> String {
+pub(crate) fn normalize_manufacturer(manufacturer: &Option<String>) -> String {
     // Keep only the first part of the manufacturer removing anything after (, /
     let parts: Vec<&str> = manufacturer
         .as_ref()

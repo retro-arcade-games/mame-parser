@@ -47,7 +47,7 @@ fn get_substitutions() -> HashMap<&'static str, &'static str> {
 ///
 /// # Substitution Mapping
 /// The function uses a set of predefined substitutions defined in `SUBSTITUTIONS_ARRAY` to map specific terms to their standardized descriptions.
-pub fn normalize_nplayer(nplayers: &Option<String>) -> String {
+pub(crate) fn normalize_nplayer(nplayers: &Option<String>) -> String {
     let substitutions = get_substitutions();
     nplayers
         .as_ref()
