@@ -1,6 +1,7 @@
 use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
 use crate::core::models::Machine;
 use crate::core::models::Resource;
+use anyhow::Context;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::collections::HashMap;
@@ -8,6 +9,52 @@ use std::error::Error;
 use std::fs::{self, File};
 use std::io::BufReader;
 
+/// Reads a resource file and processes its content to extract machine-related resources.
+///
+/// This function reads an XML-based resource file, processes its content, and populates a `HashMap` of `Machine` objects
+/// with their associated resources. It uses an XML reader to parse the file, identifies relevant nodes,
+/// and updates the machines with the extracted information.
+///
+/// # Parameters
+/// - `file_path`: A `&str` representing the path to the resource file to be read and processed.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that tracks progress and provides status updates.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<HashMap<String, Machine>, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains a `HashMap` where the keys are machine names and the values are `Machine` structs
+///   with their associated resources.
+/// - On failure: Contains an error if the file cannot be opened, read, or if there are issues processing its content.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be opened due to permission issues or if it does not exist.
+/// - There are I/O errors while reading the file.
+/// - There is an error while parsing the XML content.
+/// # File Structure
+/// The `resources.dat` file format represents a structured dataset of various resources associated with arcade machines.
+/// The structure is organized into `machine` elements, each representing a different resource grouping.
+/// Below is the outline of the structure used for parsing this file:
+///
+/// - `Machine`: Represents a resource group associated with a specific machine:
+///   - `name`: The unique identifier for the machine or resource group (attribute).
+///     - Possible values include: `artpreview`, `bosses`, `cabinets`, `covers`, `cpanel`, `devices`,
+///       `ends`, `flyers`, `gameover`, `howto`, `icons`, `logo`, `manuals`, `marquees`, `pcb`,
+///       `scores`, `select`, `snap`, `titles`, `versus`, `videosnaps`, `warning`.
+///
+///   - `description`: A textual description of the resource group (child node).
+///
+///   - `roms`: A collection of `rom` elements, each representing a specific resource file associated with the machine (child nodes).
+///     - Each `<rom>` element has the following attributes:
+///       - `name`: The name of the resource file including the file path (e.g., `artpreview\005.png`).
+///       - `size`: The size of the resource file in bytes.
+///       - `crc`: The CRC32 checksum of the resource file, used for integrity verification.
+///       - `sha1`: The SHA1 hash of the resource file, providing a more secure integrity check.
+///
+/// - `machine`: Each machine element groups together a set of related resources, identified by the `name` attribute.
+/// - `description`: Provides a brief textual description of the machine or resource group.
+/// - `rom`: Represents individual resource files, associated with artwork, snapshots, or other media related to the arcade machine.
+///
 pub fn read_resources_file(
     file_path: &str,
     progress_callback: ProgressCallback,
@@ -24,7 +71,8 @@ pub fn read_resources_file(
         callback_type: CallbackType::Info,
     });
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     // Read the file content
@@ -97,6 +145,29 @@ pub fn read_resources_file(
     Ok(machines)
 }
 
+/// Processes an XML node to extract machine and resource information.
+///
+/// This function processes XML nodes from a reader, extracting relevant machine and resource information
+/// and storing it in a `HashMap` of `Machine` objects. It identifies nodes related to machines and ROM resources,
+/// and appropriately updates the `current_section` and `machines` with the parsed data.
+///
+/// # Parameters
+/// - `e`: A reference to the current XML event (`BytesStart`) representing the node being processed.
+/// - `reader`: A mutable reference to the `Reader` instance that reads the XML content.
+/// - `current_section`: A mutable reference to an `Option<String>` representing the current section being processed.
+///   It is updated with the machine or section name if a `machine` node is encountered.
+/// - `machines`: A mutable reference to a `HashMap<String, Machine>` that stores the `Machine` objects
+///   with their names as keys. This is updated with resources or machine information based on the XML node being processed.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn std::error::Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` indicating that the node was processed without errors.
+/// - On failure: Returns an error if there is an issue while reading or processing the XML attributes.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There is a failure to decode or extract any XML attributes or content.
+/// - There is a parsing issue or I/O error while processing the XML node.
 fn process_node(
     e: &quick_xml::events::BytesStart,
     reader: &mut Reader<BufReader<File>>,
@@ -167,7 +238,24 @@ fn process_node(
     Ok(())
 }
 
-pub fn count_total_elements(file_content: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
+/// Counts the total number of `<rom>` elements in an XML file content.
+///
+/// This function reads the content of an XML string and counts the number of `<rom>` elements
+/// encountered in the file. The count represents the total number of ROM entries found within the XML structure.
+///
+/// # Parameters
+/// - `file_content`: A `&str` representing the content of the XML file to be read and analyzed.
+///
+/// # Returns
+/// Returns a `Result<usize, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the total number of `<rom>` elements found in the XML content.
+/// - On failure: Contains an error if there is an issue reading or processing the XML content.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The XML content cannot be read due to an unexpected format or malformed data.
+/// - There is an I/O issue while processing the XML content.
+fn count_total_elements(file_content: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
     let mut reader = Reader::from_str(file_content);
     reader.trim_text(true);
     let mut buf = Vec::with_capacity(8 * 1024);
