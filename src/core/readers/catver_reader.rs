@@ -5,15 +5,15 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, error::Error};
 
-/// Reads and processes a "catver.ini" file to extract machine categories and subcategories.
+/// Reads and processes a catver.ini file to extract machine categories and subcategories.
 ///
-/// This function reads a specified "catver.ini" file line by line, extracts machine information,
+/// This function reads a specified catver.ini file line by line, extracts machine information,
 /// and populates a `HashMap` with machine names as keys and their corresponding `Machine` structs as values.
 /// It identifies categories, subcategories, and flags machines marked as "Mature".
 /// Progress updates are provided via a callback function.
 ///
 /// # Parameters
-/// - `file_path`: A `&str` representing the path to the "catver.ini" file to be read and processed.
+/// - `file_path`: A `&str` representing the path to the catver.ini file to be read and processed.
 /// - `progress_callback`: A callback function of type `ProgressCallback` that tracks progress and provides status updates.
 ///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
 ///

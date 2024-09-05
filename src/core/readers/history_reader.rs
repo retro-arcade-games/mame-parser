@@ -1,5 +1,6 @@
 use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
 use crate::core::models::{HistorySection, Machine};
+use anyhow::{Context, Result};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::collections::HashMap;
@@ -83,11 +84,13 @@ pub fn read_history_file(
         callback_type: CallbackType::Info,
     });
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     // Read the file content
-    let file_content = fs::read_to_string(file_path)?;
+    let file_content = fs::read_to_string(file_path)
+        .with_context(|| format!("Failed to read file content: {}", file_path))?;
 
     let total_elements = match count_total_elements(&file_content) {
         Ok(total_elements) => total_elements,

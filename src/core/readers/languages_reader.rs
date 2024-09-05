@@ -1,9 +1,48 @@
 use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
 use crate::core::models::Machine;
+use anyhow::Context;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::{collections::HashMap, error::Error};
 
+/// Reads and processes a "languages" file to extract machine language information.
+///
+/// This function reads a specified "languages" file line by line, extracts machine names
+/// and their associated languages, and populates a `HashMap` with machine names as keys
+/// and their corresponding `Machine` structs as values. It tracks progress through a callback function.
+///
+/// # Parameters
+/// - `file_path`: A `&str` representing the path to the "languages" file to be read and processed.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that tracks progress and provides status updates.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<HashMap<String, Machine>, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains a `HashMap` where the keys are machine names and the values are `Machine` structs
+///   with their associated languages.
+/// - On failure: Contains an error if the file cannot be opened, read, or if there are issues processing its content.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be opened due to permission issues or if it does not exist.
+/// - There are I/O errors while reading the file.
+/// - The total number of elements in the file cannot be determined.
+///
+/// # File Structure
+/// The `languages.ini` file format represents configurations and data related to different languages in the system.
+/// The file is organized into sections, where each section corresponds to a specific language.
+/// Within each language section, entries represent names of ROMs associated with that language.
+///
+/// - `[FOLDER_SETTINGS]`: A section for folder settings.
+///   - `RootFolderIcon`: Specifies the icon for the root folder.
+///   - `SubFolderIcon`: Specifies the icon for sub-folders.
+///
+/// - `[ROOT_FOLDER]`: A placeholder section for root folder configurations (may be empty).
+///
+/// - `[<Language>]`: Sections where each section header is a language identifier.
+///   - Entries: Each entry is a ROM name associated with the specific language.
+///
+/// Note: Sections are labeled by language names, and the entries under each section are ROM names associated with that language.
 pub fn read_languages_file(
     file_path: &str,
     progress_callback: ProgressCallback,
@@ -41,7 +80,8 @@ pub fn read_languages_file(
     });
 
     // Open the file and create a buffered reader
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
     let mut current_language: Option<String> = None;
 
@@ -99,6 +139,26 @@ pub fn read_languages_file(
     Ok(machines)
 }
 
+/// Counts the total number of relevant elements in a file, ignoring specific lines.
+///
+/// This function reads a specified file line by line and counts the number of lines
+/// that are considered relevant entries, based on the criteria defined in the function.
+/// Lines that match specific criteria, such as being empty, containing certain keywords,
+/// or starting with specific characters, are ignored in the count.
+///
+/// # Parameters
+/// - `file_path`: A `&str` representing the path to the file to be read and analyzed.
+///
+/// # Returns
+/// Returns a `Result<usize, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the total number of relevant lines found in the file.
+/// - On failure: Contains an error if the file cannot be opened or read due to I/O issues.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be opened due to permission issues or if it does not exist.
+/// - There are I/O errors while reading the file.
+///
 fn count_total_elements(file_path: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
     let to_ignore = vec![
         ";",
@@ -112,7 +172,8 @@ fn count_total_elements(file_path: &str) -> Result<usize, Box<dyn Error + Send +
         "SubFolderIcon folder",
     ];
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     let count = reader

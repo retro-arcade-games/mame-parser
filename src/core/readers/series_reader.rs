@@ -1,10 +1,50 @@
 use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
 use crate::core::models::Machine;
+use anyhow::Context;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+/// Reads and processes a "series.ini" file to extract machine series information.
+///
+/// This function reads a specified "series.ini" file line by line, extracts machine names,
+/// and associates them with their corresponding series. It updates a `HashMap` where the
+/// keys are machine names and the values are `Machine` structs containing the series information.
+/// Progress updates are provided via a callback function.
+///
+/// # Parameters
+/// - `file_path`: A `&str` representing the path to the "series.ini" file to be read and processed.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that tracks progress and provides status updates.
+///   The callback receives a `ProgressInfo` struct containing `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<HashMap<String, Machine>, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains a `HashMap` where the keys are machine names and the values are `Machine` structs
+///   with their associated series information.
+/// - On failure: Contains an error if the file cannot be opened, read, or if there are issues processing its content.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be opened due to permission issues or if it does not exist.
+/// - There are I/O errors while reading the file.
+/// - The total number of elements in the file cannot be determined.
+///
+/// # File Structure
+/// The `series.ini` file format represents configurations and data related to different game series in the system.
+/// The file is organized into sections, where each section corresponds to a specific game series.
+/// Within each series section, entries represent names of ROMs associated with that series.
+///
+/// - `[FOLDER_SETTINGS]`: A section for folder settings.
+///   - `RootFolderIcon`: Specifies the icon for the root folder.
+///   - `SubFolderIcon`: Specifies the icon for sub-folders.
+///
+/// - `[ROOT_FOLDER]`: A placeholder section for root folder configurations (may be empty).
+///
+/// - `[<Series>]`: Sections where each section header is a game series identifier.
+///   - Entries: Each entry is a ROM name associated with the specific game series.
+///
+/// Note: Sections are labeled by series names, and the entries under each section are ROM names associated with that series.
 pub fn read_series_file(
     file_path: &str,
     progress_callback: ProgressCallback,
@@ -44,7 +84,8 @@ pub fn read_series_file(
 
     let to_ignore = [";", "", " ", "", "[FOLDER_SETTINGS]", "[ROOT_FOLDER]"];
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     let mut current_series: Option<String> = None;
@@ -95,6 +136,23 @@ pub fn read_series_file(
     Ok(machines)
 }
 
+/// Counts the total number of elements in a file, ignoring certain lines based on specific patterns.
+///
+/// This function reads a specified file line by line and counts the number of lines that are not in a predefined list of
+/// patterns to ignore. The lines to ignore include comments, empty lines, and specific configuration sections or icons.
+///
+/// # Parameters
+/// - `file_path`: A `&str` representing the path to the file to be read and analyzed.
+///
+/// # Returns
+/// Returns a `Result<usize, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the total number of lines that do not match any of the ignored patterns.
+/// - On failure: Contains an error if the file cannot be opened or read due to I/O issues.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be opened due to permission issues or if it does not exist.
+/// - There are I/O errors while reading the file.
 fn count_total_elements(file_path: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
     let to_ignore = [
         ";",
@@ -108,7 +166,8 @@ fn count_total_elements(file_path: &str) -> Result<usize, Box<dyn Error + Send +
         "SubFolderIcon folder",
     ];
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     let count = reader
