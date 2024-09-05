@@ -31,6 +31,7 @@
 //!
 mod core;
 mod helpers;
+
 pub use core::callback_progress::{
     CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
 };
