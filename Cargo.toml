@@ -16,9 +16,9 @@ exclude = [
     ".vscode",
     ".github",
     "tests",
-    "examples",
     "target",
     "*.md",
+    "LICENSE",
 ]
 
 [dependencies]
