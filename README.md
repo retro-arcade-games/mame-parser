@@ -22,20 +22,27 @@
 - **File Downloading**: Download the latest MAME-related files and store them in a specified location.
 - **File Decompression**: Decompress downloaded files automatically, supporting multiple archive formats such as ZIP and 7z.
 - **Data Parsing and Management**: Parse MAME data files with utilities for reading and processing information in-memory.
-- **Multi-format Exporting**: Export parsed data to various formats, including JSON, CSV, and SQLite.
+<!-- - **Multi-format Exporting**: Export parsed data to various formats, including JSON, CSV, and SQLite. -->
 - **Progress Tracking**: Monitor the progress of operations.
 
 ## Library Contents
 
-### File Download
+### File Handling
 
 - **`download_file`**: Downloads a single MAME data file to a specified location.
 - **`download_files`**: Downloads multiple MAME data files concurrently, providing progress tracking across multiple threads.
-
-### File Unpacking
-
 - **`unpack_file`**: Unpacks a single downloaded file from its archive format (e.g., ZIP or 7z) to a specified folder.
 - **`unpack_files`**: Unpacks multiple files concurrently, allowing for efficient decompression with progress tracking.
+- **`read_file`**: Reads a single data file and returns a Hashmap with the information.
+- **`read_files`**: Reads multiple data files concurrently and returns a Hashmap with the information.
+
+### Progress Tracking
+
+Tools and types for tracking and managing progress updates during operations.
+
+### MAME file readers
+
+Functions for reading and parsing different MAME data file formats.
 
 ## Getting Started
 
@@ -47,58 +54,66 @@ Add `mame-parser` as a dependency in your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-mame-parser = "0.1"
+mame-parser = "0.5"
 ```
 
-Make sure to replace `"0.1"` with the actual version of `mame-parser` that you intend to use.
+Make sure to replace `"0.5"` with the actual version of `mame-parser` that you intend to use.
 
-### 2. Import the Library
-
-In your Rust project, import the necessary functions and types from the `mame-parser` crate:
+### 2. Download file example
 
 ```rust
-use mame_parser::{
-download_file, download_files, unpack_file, unpack_files,
-ProgressInfo, CallbackType, ProgressCallback, SharedProgressCallback, MameDataType,
-};
-```
-
-### 3. Example Usage
-
-Here's a simple example demonstrating how to use `mame-parser` to download and unpack MAME data files:
-
-```rust
-use mame_parser::{download_file, unpack_file, MameDataType, ProgressCallback, ProgressInfo, CallbackType};
-use std::path::Path;
+use mame_parser::file_handling::download_file;
+use mame_parser::models::MameDataType;
+use mame_parser::progress::{CallbackType, ProgressCallback, ProgressInfo};
 use std::error::Error;
+use std::path::Path;
 
 fn main() -> Result<(), Box<dyn Error>> {
-let workspace_path = Path::new("path/to/workspace");
+    // Define the workspace directory
+    let workspace_path = Path::new("playground");
 
-    // Define a progress callback
+    // Define a callback function for progress tracking
     let progress_callback: ProgressCallback = Box::new(move |progress_info: ProgressInfo| {
+        // Update progress using console messages
         match progress_info.callback_type {
-            CallbackType::Progress => println!("Progress: {} / {}", progress_info.progress, progress_info.total),
-            CallbackType::Info => println!("Info: {}", progress_info.message),
-            CallbackType::Finish => println!("Finished: {}", progress_info.message),
-            CallbackType::Error => eprintln!("Error: {}", progress_info.message),
+            CallbackType::Progress => {
+                println!(
+                    "Progress: {}/{}",
+                    progress_info.progress, progress_info.total
+                );
+            }
+            CallbackType::Info => {
+                println!("Info: {}", progress_info.message);
+            }
+            CallbackType::Finish => {
+                println!("Finished: {}", progress_info.message);
+            }
+            CallbackType::Error => {
+                eprintln!("Error: {}", progress_info.message);
+            }
         }
     });
 
-    // Download and unpack a MAME data file
-    download_file(MameDataType::Series, &workspace_path, progress_callback.clone())?;
-    unpack_file(MameDataType::Series, &workspace_path, progress_callback)?;
+    // Download the file
+    let downloaded_file = download_file(MameDataType::Series, workspace_path, progress_callback);
+
+    // Print the result
+    match downloaded_file {
+        Ok(downloaded_file) => {
+            println!(
+                "Downloaded file: {}",
+                downloaded_file.as_path().to_str().unwrap()
+            );
+        }
+        Err(e) => {
+            eprintln!("Error during download: {}", e);
+        }
+    }
 
     Ok(())
-
 }
+
 ```
-
-This example shows how to:
-
-- Define a progress callback function to monitor the progress of operations.
-- Use `download_file` to download a MAME data file.
-- Use `unpack_file` to unpack the downloaded file.
 
 ### 4. Running the Example
 
