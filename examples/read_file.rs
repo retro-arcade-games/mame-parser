@@ -46,10 +46,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Print the result
     match machines {
         Ok(machines) => {
-            println!("First entry: {:?}", machines.iter().next().unwrap());
+            println!("Machines loaded: {}", machines.len());
         }
         Err(e) => {
-            eprintln!("Error reading data file: {}", e);
+            eprintln!("Error reading data files: {}", e);
         }
     }
 

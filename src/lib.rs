@@ -12,10 +12,15 @@
 //!
 //! # Crate Contents
 //!
-//! * [`file_handling`](file_handling) - Provides functions and utilities for downloading, unpacking, and reading MAME data files.
-//! * [`progress`](progress) - Contains tools and types for tracking and managing progress updates during operations.
-//! * [`models`](models) - Defines data types and models used for representing MAME data.
-//! * [`readers`](readers) - Contains functions for reading and parsing different MAME data file formats.
+//! * [`File Handling`](file_handling) - Provides functions and utilities for downloading, unpacking, and reading MAME data files.
+//! * [`Progress tracking`](progress) - Contains tools and types for tracking and managing progress updates during operations.
+//! * [`Create models`](models) - Defines data types and models used for representing MAME data.
+//! * [`Mame files Readers`](readers) - Contains functions for reading and parsing different MAME data file formats.
+//!
+//! # Examples
+//!
+//! You can find examples of how to use the library in the `examples` directory of the repository.
+//! Also each function in the file_handling module has its own documentation with examples.
 //!
 mod core;
 mod helpers;
@@ -24,9 +29,9 @@ mod helpers;
 pub use core::models::callback_progress as progress;
 /// Management of MAME data files, including downloading, reading, and unpacking.
 pub mod file_handling {
-    pub use crate::core::data_management::file_downloader::{download_file, download_files};
-    pub use crate::core::data_management::file_reader::{read_file, read_files};
-    pub use crate::core::data_management::file_unpacker::{unpack_file, unpack_files};
+    pub use crate::core::file_handling::file_downloader::{download_file, download_files};
+    pub use crate::core::file_handling::file_reader::{read_file, read_files};
+    pub use crate::core::file_handling::file_unpacker::{unpack_file, unpack_files};
 }
 /// Data models and types used for MAME data processing.
 pub mod models {

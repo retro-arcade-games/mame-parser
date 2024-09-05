@@ -29,13 +29,5 @@ anyhow = "1.0.86"
 [dev-dependencies]
 indicatif = "0.16"
 
-[[example]]
-name = "download_file"
-path = "examples/download_file.rs"
-
-[[example]]
-name = "download_files"
-path = "examples/download_files.rs"
-
 [package.metadata.docs.rs]
 no-deps = true
