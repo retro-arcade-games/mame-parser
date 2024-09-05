@@ -28,7 +28,7 @@ use std::{collections::HashMap, error::Error};
 /// - There are I/O errors while reading the file.
 /// - The total number of elements in the file cannot be determined.
 ///
-/// # File Structure
+/// # File structure
 /// The `languages.ini` file format represents configurations and data related to different languages in the system.
 /// The file is organized into sections, where each section corresponds to a specific language.
 /// Within each language section, entries represent names of ROMs associated with that language.

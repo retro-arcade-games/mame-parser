@@ -30,7 +30,7 @@ use std::io::{BufRead, BufReader};
 /// - There are I/O errors while reading the file.
 /// - The total number of elements in the file cannot be determined.
 ///
-/// # File Structure
+/// # File structure
 /// The `series.ini` file format represents configurations and data related to different game series in the system.
 /// The file is organized into sections, where each section corresponds to a specific game series.
 /// Within each series section, entries represent names of ROMs associated with that series.

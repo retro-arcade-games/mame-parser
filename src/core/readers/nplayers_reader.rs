@@ -31,7 +31,7 @@ use std::io::{BufRead, BufReader};
 /// - There are I/O errors while reading the file.
 /// - The total number of elements in the file cannot be determined.
 ///
-/// # File Structure
+/// # File structure
 /// The `nplayers.ini` file format represents configurations related to the number of players and game types for various ROMs.
 /// The file is organized into a single section `[NPlayers]`, where each entry corresponds to a specific ROM and its associated player count or game type.
 /// Each line follows the format:

@@ -31,7 +31,8 @@ use std::io::BufReader;
 /// - The file cannot be opened due to permission issues or if it does not exist.
 /// - There are I/O errors while reading the file.
 /// - There is an error while parsing the XML content.
-/// # File Structure
+///
+/// # File structure
 /// The `resources.dat` file format represents a structured dataset of various resources associated with arcade machines.
 /// The structure is organized into `machine` elements, each representing a different resource grouping.
 /// Below is the outline of the structure used for parsing this file:

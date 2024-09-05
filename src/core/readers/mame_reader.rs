@@ -1,12 +1,95 @@
 use crate::core::callback_progress::{CallbackType, ProgressCallback, ProgressInfo};
 use crate::core::filters::{machine_names_normalization, manufacturers_normalization};
 use crate::core::models::{BiosSet, DeviceRef, Disk, ExtendedData, Machine, Rom, Sample, Software};
+use anyhow::Context;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::{collections::HashMap, error::Error};
 
+/// Reads a MAME file and processes the machine entries contained within.
+///
+/// This function opens and reads the specified MAME file, counting the total number of
+/// machine entries, then iteratively processes each entry to construct a `HashMap` of machines.
+///
+/// # Parameters
+/// - `file_path`: The path to the MAME file to be read.
+/// - `progress_callback`: A callback function to report progress during the file processing.
+///
+/// # Returns
+/// - `Result<HashMap<String, Machine>, Box<dyn Error + Send + Sync>>`:
+///   - On success: A `HashMap` where each key is a machine name and the value is the corresponding `Machine` struct.
+///   - On failure: An error if the file could not be read or processed.
+///
+/// # Errors
+/// - Returns an error if the file cannot be opened or read.
+/// - Returns an error if there is an issue processing the XML content.
+///
+/// # File structure
+/// The `mame.dat` file format represents data about arcade machines and their components.
+///
+/// This format is used to parse the details of various arcade machines, their associated
+/// ROMs, BIOS sets, devices, software, samples, and other attributes. The following is a
+/// description of the structure and elements used within this file:
+///
+/// # Machine
+/// Represents a single arcade machine with various attributes:
+/// - `name`: The unique identifier for the machine (attribute).
+/// - `source_file`: Optional source file for the machine's data (attribute).
+/// - `rom_of`: Indicates the ROM depends on files from another ROM to function correctly (optional, attribute).
+/// - `clone_of`: Indicates the ROM is a modified version or variant of another ROM known as the parent ROM (optional, attribute).
+/// - `is_bios`: Flag indicating if the machine is a BIOS (optional, attribute).
+/// - `is_device`: Flag indicating if the machine is a device (optional, attribute).
+/// - `runnable`: Flag indicating if the machine is runnable (optional, attribute).
+/// - `is_mechanical`: Flag indicating if the machine is mechanical (optional, attribute).
+/// - `sample_of`: Indicates the ROM uses specific sound samples from another ROM (optional, attribute).
+/// - `description`: Textual description of the machine (optional, child node).
+/// - `year`: Year of release (optional, child node).
+/// - `manufacturer`: Manufacturer name (optional, child node).
+///
+/// # BIOS Sets
+/// - `bios_sets`: List of BIOS sets related to the machine (optional, child nodes).
+///   - Each `<biosset>` element includes:
+///     - `name`: Name of the BIOS set (attribute).
+///     - `description`: Description of the BIOS set (attribute).
+///
+/// # ROMs
+/// - `roms`: List of ROMs associated with the machine (optional, child nodes).
+///   - Each `<rom>` element includes:
+///     - `name`: Name of the ROM (attribute).
+///     - `size`: Size of the ROM (attribute).
+///     - `merge`: Merge attribute (optional, attribute).
+///     - `status`: Status attribute (optional, attribute).
+///     - `crc`: CRC value (optional, attribute).
+///     - `sha1`: SHA1 value (optional, attribute).
+///
+/// # Device References
+/// - `device_refs`: List of device references related to the machine (optional, child nodes).
+///   - Each `<device_ref>` element includes:
+///     - `name`: Name of the device reference (attribute).
+///
+/// # Software List
+/// - `software_list`: List of software associated with the machine (optional, child nodes).
+///   - Each `<softwarelist>` element includes:
+///     - `name`: Name of the software (attribute).
+///
+/// # Samples
+/// - `samples`: List of samples associated with the machine (optional, child nodes).
+///   - Each `<sample>` element includes:
+///     - `name`: Name of the sample (attribute).
+///
+/// # Driver Status
+/// - `driver_status`: Status of the machine's driver (optional, child node).
+///
+/// # Disks
+/// - `disks`: List of disks related to the machine (optional, child nodes).
+///   - Each `<disk>` element includes:
+///     - `name`: Name of the disk (attribute).
+///     - `sha1`: SHA1 value (optional, attribute).
+///     - `merge`: Merge attribute (optional, attribute).
+///     - `status`: Status attribute (optional, attribute).
+///     - `region`: Region attribute (optional, attribute).
 pub fn read_mame_file(
     file_path: &str,
     progress_callback: ProgressCallback,
@@ -23,7 +106,8 @@ pub fn read_mame_file(
         callback_type: CallbackType::Info,
     });
 
-    let file = File::open(file_path)?;
+    let file =
+        File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
     let reader = BufReader::new(file);
 
     // Read the file content
@@ -108,6 +192,22 @@ pub fn read_mame_file(
     Ok(machines)
 }
 
+/// Processes an XML node and updates the current machine with the parsed data.
+///
+/// This function handles different types of XML elements relevant to the structure of
+/// the machine data. It initializes new machines, reads their attributes, and adds
+/// various components (such as ROMs, BIOS sets, and software lists) to the machine structure.
+///
+/// # Parameters
+/// - `e`: A reference to the `BytesStart` event representing the start of an XML element.
+/// - `reader`: A mutable reference to the `Reader` used to read the XML data.
+/// - `current_machine`: A mutable reference to an `Option<Machine>`, which will be updated
+///   with the parsed machine data.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Indicates the node was processed without errors.
+/// - On failure: Contains an error if there were issues reading the XML or updating the machine data.
 fn process_node(
     e: &quick_xml::events::BytesStart,
     reader: &mut Reader<BufReader<File>>,
@@ -353,6 +453,22 @@ fn process_node(
     Ok(())
 }
 
+/// Counts the total number of `<machine>` elements in the provided XML content.
+///
+/// This function parses the given XML content line by line and counts how many `<machine>` elements
+/// are present. The count is used to determine the total number of machines represented in the XML.
+///
+/// # Parameters
+/// - `file_content`: A `&str` containing the entire content of the XML file as a string.
+///
+/// # Returns
+/// Returns a `Result<usize, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains the total number of `<machine>` elements found in the XML content.
+/// - On failure: Contains an error if there are issues while reading or parsing the XML content.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are I/O errors or issues while reading and parsing the XML content.
 fn count_total_elements(file_content: &str) -> Result<usize, Box<dyn Error + Send + Sync>> {
     let mut reader = Reader::from_str(file_content);
     reader.trim_text(true);
