@@ -12,30 +12,34 @@
 //!
 //! # Crate Contents
 //!
-//! * **File Download**
-//!   * [`download_file`](fn.download_file.html) - Downloads a single MAME data file to a specified location.
-//!   * [`download_files`](fn.download_files.html) - Downloads multiple MAME data files concurrently, supporting progress tracking across multiple threads.
-//!
-//! * **File Unpacking**
-//!   * [`unpack_file`](fn.unpack_file.html) - Unpacks a single downloaded file from its archive format, such as ZIP or 7z, to a specified folder.
-//!   * [`unpack_files`](fn.unpack_files.html) - Unpacks multiple files concurrently, allowing efficient decompression with progress tracking.
-//!
-//! * **Progress Handling**
-//!   * [`ProgressInfo`](struct.ProgressInfo.html) - Represents detailed progress information for ongoing operations.
-//!   * [`CallbackType`](enum.CallbackType.html) - Enum defining the types of progress updates that can be reported (e.g., progress, info, finish, error).
-//!   * [`ProgressCallback`](type.ProgressCallback.html) - Type alias for a callback function that reports progress updates for a single operation.
-//!   * [`SharedProgressCallback`](type.SharedProgressCallback.html) - Type alias for a thread-safe callback function used across multiple operations.
-//!
-//! * **MAME Data Types**
-//!   * [`MameDataType`](enum.MameDataType.html) - Enum representing the different types of MAME data files supported by the library.
+//! * [`file_handling`](file_handling) - Provides functions and utilities for downloading, unpacking, and reading MAME data files.
+//! * [`progress`](progress) - Contains tools and types for tracking and managing progress updates during operations.
+//! * [`models`](models) - Defines data types and models used for representing MAME data.
+//! * [`readers`](readers) - Contains functions for reading and parsing different MAME data file formats.
 //!
 mod core;
 mod helpers;
 
-pub use core::callback_progress::{
-    CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback,
-};
-pub use core::data_management::file_downloader::{download_file, download_files};
-pub use core::data_management::file_reader::{read_file, read_files};
-pub use core::data_management::file_unpacker::{unpack_file, unpack_files};
-pub use core::mame_data_types::MameDataType;
+/// Module to handle the callback functions used for progress tracking.
+pub use core::callback_progress as progress;
+/// Management of MAME data files, including downloading, reading, and unpacking.
+pub mod file_handling {
+    pub use crate::core::data_management::file_downloader::{download_file, download_files};
+    pub use crate::core::data_management::file_reader::{read_file, read_files};
+    pub use crate::core::data_management::file_unpacker::{unpack_file, unpack_files};
+}
+/// Data models and types used for MAME data processing.
+pub mod models {
+    pub use crate::core::mame_data_types::MameDataType;
+    pub use crate::core::models::*;
+}
+/// Module for reading and parsing MAME data files.
+pub mod readers {
+    pub use crate::core::readers::catver_reader::read_catver_file;
+    pub use crate::core::readers::history_reader::read_history_file;
+    pub use crate::core::readers::languages_reader::read_languages_file;
+    pub use crate::core::readers::mame_reader::read_mame_file;
+    pub use crate::core::readers::nplayers_reader::read_nplayers_file;
+    pub use crate::core::readers::resources_reader::read_resources_file;
+    pub use crate::core::readers::series_reader::read_series_file;
+}

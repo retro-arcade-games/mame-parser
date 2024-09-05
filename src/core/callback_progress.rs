@@ -1,6 +1,5 @@
+use crate::models::MameDataType;
 use std::sync::Arc;
-
-use crate::MameDataType;
 
 /// Represents the type of callback being invoked during an operation.
 ///

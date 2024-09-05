@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
 
-    use mame_parser::{download_files, CallbackType, MameDataType, SharedProgressCallback};
+    use mame_parser::file_handling::download_files;
+    use mame_parser::models::MameDataType;
+    use mame_parser::progress::{CallbackType, SharedProgressCallback};
     use std::collections::HashMap;
     use std::error::Error;
     use std::path::Path;

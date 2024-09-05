@@ -1,5 +1,7 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use mame_parser::{unpack_files, CallbackType, MameDataType, ProgressInfo, SharedProgressCallback};
+use mame_parser::file_handling::unpack_files;
+use mame_parser::models::MameDataType;
+use mame_parser::progress::{CallbackType, ProgressInfo, SharedProgressCallback};
 use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;

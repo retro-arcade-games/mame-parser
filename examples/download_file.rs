@@ -1,5 +1,7 @@
 use indicatif::{ProgressBar, ProgressStyle};
-use mame_parser::{download_file, CallbackType, MameDataType, ProgressCallback, ProgressInfo};
+use mame_parser::file_handling::download_file;
+use mame_parser::models::MameDataType;
+use mame_parser::progress::{CallbackType, ProgressCallback, ProgressInfo};
 use std::error::Error;
 use std::path::Path;
 
