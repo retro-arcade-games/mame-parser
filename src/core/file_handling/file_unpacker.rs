@@ -243,7 +243,6 @@ pub fn unpack_files(
 /// - The archive format is unsupported (i.e., the file does not have a `.zip` or `.7z` extension).
 /// - The destination folder is invalid or inaccessible.
 /// - The extraction process fails due to reading or writing errors.
-
 fn unpack(
     zip_file_path: &str,
     extract_folder: &Path,
@@ -290,7 +289,6 @@ fn unpack(
 /// - The ZIP archive cannot be opened or read.
 /// - The destination folder cannot be created or is invalid.
 /// - There are errors during file extraction, such as reading from the archive or writing to the disk.
-
 fn extract_zip(
     archive_path: &str,
     destination_folder: &str,

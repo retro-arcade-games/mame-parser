@@ -49,7 +49,6 @@ pub(crate) fn ensure_folder_exists(path: &Path) -> io::Result<()> {
 /// This function will return an error if:
 /// - No file in the specified folder matches the provided regex pattern.
 /// - There are issues accessing the folder or reading its contents (handled implicitly by the iterator).
-
 pub(crate) fn find_file_with_pattern(
     folder: &str,
     pattern: &regex::Regex,

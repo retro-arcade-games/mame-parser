@@ -46,8 +46,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Print the result
     match machines {
         Ok(machines) => {
+            // Filters to apply
+            let filters_to_remove = vec![MachineFilter::Mechanical, MachineFilter::Bios];
+
             // Filter the machines
-            let filtered_machines = remove_machines_by_filter(&machines, MachineFilter::Mechanical);
+            let filtered_machines = remove_machines_by_filter(&machines, &filters_to_remove);
             println!("Machines loaded: {}", machines.len());
             println!("Filtered machines: {}", filtered_machines.unwrap().len());
         }

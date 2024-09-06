@@ -69,7 +69,6 @@ use std::io::BufReader;
 ///   - **CONTRIBUTE**: Information on how to contribute or support the game.
 ///
 /// `</entry>`
-
 pub fn read_history_file(
     file_path: &str,
     progress_callback: ProgressCallback,

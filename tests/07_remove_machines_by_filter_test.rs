@@ -40,9 +40,13 @@ mod tests {
         // Verify that the file was read successfully
         match machines {
             Ok(machines) => {
+                // Filters to apply
+                let filters_to_remove = vec![MachineFilter::Mechanical, MachineFilter::Bios];
+
                 // Filter the machines
                 let filtered_machines =
-                    remove_machines_by_filter(&machines, MachineFilter::Mechanical).unwrap();
+                    remove_machines_by_filter(&machines, &filters_to_remove).unwrap();
+
                 assert!(
                     machines.len() > filtered_machines.len(),
                     "Machine count is the same"
