@@ -3,27 +3,27 @@ use std::{collections::HashMap, error::Error};
 
 /// Removes machines from the given HashMap based on a list of filter criteria.
 ///
-/// This function takes a reference to a `HashMap` of machines and a slice of 
-/// `MachineFilter` enums. It returns a new `HashMap` containing only the machines 
-/// that do not match any of the specified filter criteria. If the input `machines` 
+/// This function takes a reference to a `HashMap` of machines and a slice of
+/// `MachineFilter` enums. It returns a new `HashMap` containing only the machines
+/// that do not match any of the specified filter criteria. If the input `machines`
 /// is empty, it returns an error.
 ///
 /// # Arguments
 ///
-/// * `machines` - A reference to a `HashMap` where the key is a `String` representing 
+/// * `machines` - A reference to a `HashMap` where the key is a `String` representing
 ///   the machine's name, and the value is a `Machine` struct containing the machine details.
-/// * `filters_to_remove` - A slice of `MachineFilter` enums that define the filter criteria 
+/// * `filters_to_remove` - A slice of `MachineFilter` enums that define the filter criteria
 ///   for removing machines.
 ///
 /// # Returns
 ///
-/// * `Ok(HashMap<String, Machine>)` - A new `HashMap` containing the machines that 
+/// * `Ok(HashMap<String, Machine>)` - A new `HashMap` containing the machines that
 ///   do not match any of the filter criteria provided.
 /// * `Err(Box<dyn Error>)` - An error if the input `machines` is empty.
 ///
 /// # Errors
 ///
-/// Returns an error if the input `machines` HashMap is empty. 
+/// Returns an error if the input `machines` HashMap is empty.
 ///
 /// # Example
 #[doc = docify::embed!("examples/remove_machines_by_filter.rs", main)]
@@ -53,27 +53,27 @@ pub fn remove_machines_by_filter(
 
 /// Removes machines from the given HashMap based on a list of categories to remove.
 ///
-/// This function takes a reference to a `HashMap` of machines and a slice of 
-/// `Category` enums. It returns a new `HashMap` containing only the machines 
-/// that do not belong to any of the specified categories. If the input `machines` 
+/// This function takes a reference to a `HashMap` of machines and a slice of
+/// `Category` enums. It returns a new `HashMap` containing only the machines
+/// that do not belong to any of the specified categories. If the input `machines`
 /// is empty, it returns an error.
 ///
 /// # Arguments
 ///
-/// * `machines` - A reference to a `HashMap` where the key is a `String` representing 
+/// * `machines` - A reference to a `HashMap` where the key is a `String` representing
 ///   the machine's name, and the value is a `Machine` struct containing the machine details.
-/// * `categories_to_remove` - A slice of `Category` enums that define the categories 
+/// * `categories_to_remove` - A slice of `Category` enums that define the categories
 ///   of machines to be removed.
 ///
 /// # Returns
 ///
-/// * `Ok(HashMap<String, Machine>)` - A new `HashMap` containing the machines that 
+/// * `Ok(HashMap<String, Machine>)` - A new `HashMap` containing the machines that
 ///   do not belong to any of the specified categories.
 /// * `Err(Box<dyn Error>)` - An error if the input `machines` is empty.
 ///
 /// # Errors
 ///
-/// Returns an error if the input `machines` HashMap is empty. 
+/// Returns an error if the input `machines` HashMap is empty.
 ///
 /// # Example
 #[doc = docify::embed!("examples/remove_machines_by_category.rs", main)]
@@ -106,9 +106,9 @@ pub fn remove_machines_by_category(
 
 /// Checks if a given machine matches a specified filter criteria.
 ///
-/// This function evaluates a `Machine` against a given `MachineFilter` and returns `true` 
-/// if the machine matches the filter criteria, or `false` otherwise. Different filter 
-/// criteria are evaluated based on the filter type, such as whether the machine is a 
+/// This function evaluates a `Machine` against a given `MachineFilter` and returns `true`
+/// if the machine matches the filter criteria, or `false` otherwise. Different filter
+/// criteria are evaluated based on the filter type, such as whether the machine is a
 /// device, BIOS, mechanical, modified, or a clone.
 ///
 /// # Arguments
@@ -136,8 +136,8 @@ fn filter_applies(machine: &Machine, machine_filter: &MachineFilter) -> bool {
 
 /// Determines if a machine is considered "modified" based on its description.
 ///
-/// This function checks if the provided machine description contains any keywords 
-/// that indicate the machine is a modified version, such as "bootleg," "PlayChoice-10," 
+/// This function checks if the provided machine description contains any keywords
+/// that indicate the machine is a modified version, such as "bootleg," "PlayChoice-10,"
 /// "Nintendo Super System," or "prototype". The check is case-insensitive.
 ///
 /// # Arguments
@@ -146,7 +146,7 @@ fn filter_applies(machine: &Machine, machine_filter: &MachineFilter) -> bool {
 ///
 /// # Returns
 ///
-/// * `bool` - `true` if the description contains any keyword that indicates the machine is modified; 
+/// * `bool` - `true` if the description contains any keyword that indicates the machine is modified;
 ///   `false` otherwise.
 ///
 /// # Keywords Checked
@@ -175,8 +175,8 @@ fn is_modified_machine(description: &str) -> bool {
 
 /// Checks if a machine has an invalid manufacturer.
 ///
-/// This function examines the manufacturer of a given `Machine` to determine if it 
-/// matches any of the known invalid manufacturers, such as "unknown" or "bootleg". 
+/// This function examines the manufacturer of a given `Machine` to determine if it
+/// matches any of the known invalid manufacturers, such as "unknown" or "bootleg".
 /// The check is performed in a case-insensitive manner.
 ///
 /// # Arguments
@@ -185,7 +185,7 @@ fn is_modified_machine(description: &str) -> bool {
 ///
 /// # Returns
 ///
-/// * `bool` - `true` if the machine's manufacturer is considered invalid; 
+/// * `bool` - `true` if the machine's manufacturer is considered invalid;
 ///   `false` otherwise.
 ///
 /// # Invalid Manufacturers
@@ -213,8 +213,8 @@ fn has_invalid_manufacturer(machine: &Machine) -> bool {
 
 /// Checks if a machine has an invalid player type.
 ///
-/// This function evaluates the `players` field of a given `Machine` to determine if 
-/// it matches any of the known invalid player types, such as "BIOS", "Device", or "Non-arcade". 
+/// This function evaluates the `players` field of a given `Machine` to determine if
+/// it matches any of the known invalid player types, such as "BIOS", "Device", or "Non-arcade".
 /// The check is performed in a case-insensitive manner.
 ///
 /// # Arguments
@@ -223,7 +223,7 @@ fn has_invalid_manufacturer(machine: &Machine) -> bool {
 ///
 /// # Returns
 ///
-/// * `bool` - `true` if the machine's player type is considered invalid; 
+/// * `bool` - `true` if the machine's player type is considered invalid;
 ///   `false` otherwise.
 ///
 /// # Invalid Player Types
@@ -251,8 +251,8 @@ fn has_invalid_players(machine: &Machine) -> bool {
 
 /// Determines if a machine is a clone of another machine.
 ///
-/// This function checks if a given `Machine` is a clone by evaluating whether the 
-/// `clone_of` or `rom_of` fields are set to `Some`, indicating that the machine is 
+/// This function checks if a given `Machine` is a clone by evaluating whether the
+/// `clone_of` or `rom_of` fields are set to `Some`, indicating that the machine is
 /// derived from or is a variant of another machine.
 ///
 /// # Arguments
@@ -274,8 +274,8 @@ fn is_clone(machine: &Machine) -> bool {
 
 /// Represents different filter criteria for filtering machines.
 ///
-/// The `MachineFilter` enum defines various criteria that can be used to filter 
-/// machines based on specific attributes, such as whether the machine is a device, 
+/// The `MachineFilter` enum defines various criteria that can be used to filter
+/// machines based on specific attributes, such as whether the machine is a device,
 /// BIOS, mechanical, modified, or a clone.
 ///
 /// # Variants
@@ -283,7 +283,7 @@ fn is_clone(machine: &Machine) -> bool {
 /// * `Device` - Filters machines that are marked as devices.
 /// * `Bios` - Filters machines that are identified as BIOS.
 /// * `Mechanical` - Filters machines that are categorized as mechanical.
-/// * `Modified` - Filters machines that are considered modified based on their description, 
+/// * `Modified` - Filters machines that are considered modified based on their description,
 ///   manufacturer validity, or player information.
 /// * `Clones` - Filters machines that are identified as clones of other machines.
 ///
@@ -302,8 +302,8 @@ pub enum MachineFilter {
 
 /// Represents the different categories a machine can belong to.
 ///
-/// The `Category` enum defines various categories that a machine can be classified into. 
-/// These categories represent different types of machines or devices, such as arcade games, 
+/// The `Category` enum defines various categories that a machine can be classified into.
+/// These categories represent different types of machines or devices, such as arcade games,
 /// simulators, computers, gambling machines, and more.
 ///
 /// # Variants
