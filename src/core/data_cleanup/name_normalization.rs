@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 
-/// Regular expressions used for cleaning and normalizing manufacturer names.
+// Regular expressions used for cleaning and normalizing manufacturer names.
 lazy_static! {
     static ref RE_COMMON: Regex = Regex::new(r"(?i)\b(Games|Corp|Inc|Ltd|Co|Corporation|Industries|Elc|S\.R\.L|S\.A|inc|of America|Japan|UK|USA|Europe|do Brasil|du Canada|Canada|America|Austria|of)\b\.?").unwrap();
     static ref RE_PUNCTUATION: Regex = Regex::new(r"[.,?]+$|-$").unwrap();

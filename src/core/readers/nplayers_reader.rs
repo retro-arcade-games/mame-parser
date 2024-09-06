@@ -1,5 +1,5 @@
 use crate::core::{
-    data_cleanup::nplayers_normalization,
+    data_cleanup::name_normalization,
     models::{
         callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
         core_models::Machine,
@@ -138,7 +138,7 @@ pub fn read_nplayers_file(
             // Update machine.players with the value from the file
             machine.players = Some(value.to_string());
             // Add normalized player count to the extended data
-            let normalized_name = nplayers_normalization::normalize_nplayer(&machine.players);
+            let normalized_name = name_normalization::normalize_nplayer_name(&machine.players);
             machine.extended_data.as_mut().unwrap().players = Some(normalized_name.clone());
 
             // Increase processed count

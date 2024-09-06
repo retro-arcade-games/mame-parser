@@ -1,5 +1,5 @@
 use crate::core::{
-    data_cleanup::{machine_names_normalization, manufacturers_normalization},
+    data_cleanup::name_normalization,
     models::{
         callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
         core_models::{BiosSet, DeviceRef, Disk, ExtendedData, Machine, Rom, Sample, Software},
@@ -293,7 +293,7 @@ fn process_node(
                 machine.description = Some(reader.read_text(b"description", &mut Vec::new())?);
                 // Set normalized name in Extended Data
                 let refactored_name =
-                    machine_names_normalization::normalize_name(&machine.description);
+                    name_normalization::normalize_machine_name(&machine.description);
                 machine.extended_data.as_mut().unwrap().name = Some(refactored_name.clone());
             }
         }
@@ -315,7 +315,7 @@ fn process_node(
                 machine.manufacturer = Some(reader.read_text(b"manufacturer", &mut Vec::new())?);
                 // Set normalized manufacturer in Extended Data
                 let normalized_manufacturer =
-                    manufacturers_normalization::normalize_manufacturer(&machine.manufacturer);
+                    name_normalization::normalize_manufacturer_name(&machine.manufacturer);
                 machine.extended_data.as_mut().unwrap().manufacturer =
                     Some(normalized_manufacturer.clone());
             }
