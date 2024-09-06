@@ -3,7 +3,18 @@
 <p align="center">Simplify the management and processing of files containing MAME data</p>
 
 <p align="center">
-<img src="https://github.com/retro-arcade-games/mame-parser/actions/workflows/format-and-test.yml/badge.svg" />
+    <a href="https://crates.io/crates/mame-parser">
+        <img src="https://img.shields.io/crates/v/mame-parser.svg" />
+    </a>
+    <a href="https://docs.rs/mame-parser">
+        <img src="https://docs.rs/mame-parser/badge.svg" />
+    </a>
+    <a href="https://github.com/retro-arcade-games/mame-parser/actions/workflows/format-and-test.yml">
+        <img src="https://github.com/retro-arcade-games/mame-parser/actions/workflows/format-and-test.yml/badge.svg" />
+    </a>
+    <a href="https://github.com/retro-arcade-games/mame-parser/blob/main/LICENSE">
+        <img src="https://img.shields.io/github/license/retro-arcade-games/mame-parser">
+    </a>
 </p>
 
 <p align="center">
@@ -54,10 +65,10 @@ Add `mame-parser` as a dependency in your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-mame-parser = "0.5"
+mame-parser = "0.5.0"
 ```
 
-Make sure to replace `"0.5"` with the actual version of `mame-parser` that you intend to use.
+Make sure to replace `"0.5.0"` with the actual version of `mame-parser` that you intend to use.
 
 ### 2. Download file example
 

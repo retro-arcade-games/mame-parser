@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// The `Machine` struct stores detailed information about a specific MAME machine,
 /// including its configuration, associated ROMs, BIOS sets, devices, and other related metadata.
 /// This structure is used in parsing, processing, and exporting MAME-related data.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Machine {
     /// The name of the machine.
     pub name: String,
