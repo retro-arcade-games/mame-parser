@@ -10,6 +10,121 @@ pub enum MachineFilter {
     All,
 }
 
+#[derive(Debug)]
+pub enum Category {
+    Arcade,
+    BallAndPaddle,
+    BoardGame,
+    Calculator,
+    CardGames,
+    Climbing,
+    Computer,
+    ComputerGraphicWorkstation,
+    DigitalCamera,
+    DigitalSimulator,
+    Driving,
+    Electromechanical,
+    Fighter,
+    Gambling,
+    Game,
+    GameConsole,
+    GameConsoleComputer,
+    Handheld,
+    Maze,
+    MedalGame,
+    MedicalEquipment,
+    Misc,
+    MultiGame,
+    Multiplay,
+    Music,
+    MusicGame,
+    Platform,
+    Player,
+    Printer,
+    Puzzle,
+    Quiz,
+    Radio,
+    RedemptionGame,
+    Shooter,
+    Simulation,
+    SlotMachine,
+    Sports,
+    System,
+    TTLBallAndPaddle,
+    TTLDriving,
+    TTLMaze,
+    TTLQuiz,
+    TTLShooter,
+    TTLSports,
+    TVBundle,
+    Tablet,
+    Tabletop,
+    Telephone,
+    Touchscreen,
+    Utilities,
+    Watch,
+    WhacAMole,
+}
+
+impl Category {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Category::Arcade => "Arcade",
+            Category::BallAndPaddle => "Ball & Paddle",
+            Category::BoardGame => "Board Game",
+            Category::Calculator => "Calculator",
+            Category::CardGames => "Card Games",
+            Category::Climbing => "Climbing",
+            Category::Computer => "Computer",
+            Category::ComputerGraphicWorkstation => "Computer Graphic Workstation",
+            Category::DigitalCamera => "Digital Camera",
+            Category::DigitalSimulator => "Digital Simulator",
+            Category::Driving => "Driving",
+            Category::Electromechanical => "Electromechanical",
+            Category::Fighter => "Fighter",
+            Category::Gambling => "Gambling",
+            Category::Game => "Game",
+            Category::GameConsole => "Game Console",
+            Category::GameConsoleComputer => "Game Console/Computer",
+            Category::Handheld => "Handheld",
+            Category::Maze => "Maze",
+            Category::MedalGame => "Medal Game",
+            Category::MedicalEquipment => "Medical Equipment",
+            Category::Misc => "Misc.",
+            Category::MultiGame => "MultiGame",
+            Category::Multiplay => "Multiplay",
+            Category::Music => "Music",
+            Category::MusicGame => "Music Game",
+            Category::Platform => "Platform",
+            Category::Player => "Player",
+            Category::Printer => "Printer",
+            Category::Puzzle => "Puzzle",
+            Category::Quiz => "Quiz",
+            Category::Radio => "Radio",
+            Category::RedemptionGame => "Redemption Game",
+            Category::Shooter => "Shooter",
+            Category::Simulation => "Simulation",
+            Category::SlotMachine => "Slot Machine",
+            Category::Sports => "Sports",
+            Category::System => "System",
+            Category::TTLBallAndPaddle => "TTL * Ball & Paddle",
+            Category::TTLDriving => "TTL * Driving",
+            Category::TTLMaze => "TTL * Maze",
+            Category::TTLQuiz => "TTL * Quiz",
+            Category::TTLShooter => "TTL * Shooter",
+            Category::TTLSports => "TTL * Sports",
+            Category::TVBundle => "TV Bundle",
+            Category::Tablet => "Tablet",
+            Category::Tabletop => "Tabletop",
+            Category::Telephone => "Telephone",
+            Category::Touchscreen => "Touchscreen",
+            Category::Utilities => "Utilities",
+            Category::Watch => "Watch",
+            Category::WhacAMole => "Whac-A-Mole",
+        }
+    }
+}
+
 pub fn remove_machines_by_filter(
     machines: &HashMap<String, Machine>,
     machine_filter: MachineFilter,
@@ -22,6 +137,32 @@ pub fn remove_machines_by_filter(
 
     for (name, machine) in machines {
         if !filter_applies(machine, &machine_filter) {
+            filtered_machines.insert(name.clone(), machine.clone());
+        }
+    }
+
+    Ok(filtered_machines)
+}
+
+pub fn remove_machines_by_category(
+    machines: &HashMap<String, Machine>,
+    categories_to_remove: &[Category],
+) -> Result<HashMap<String, Machine>, Box<dyn Error>> {
+    if machines.is_empty() {
+        return Err("No machines data loaded, please read the data first.".into());
+    }
+
+    let mut filtered_machines = HashMap::new();
+
+    let categories_to_remove_str: Vec<&str> = categories_to_remove
+        .iter()
+        .map(|cat| cat.as_str())
+        .collect();
+
+    for (name, machine) in machines {
+        let category_str = machine.category.as_deref();
+
+        if category_str.is_some() && !categories_to_remove_str.contains(&category_str.unwrap()) {
             filtered_machines.insert(name.clone(), machine.clone());
         }
     }

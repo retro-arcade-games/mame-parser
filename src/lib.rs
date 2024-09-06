@@ -29,13 +29,16 @@ mod helpers;
 pub use core::models::callback_progress as progress;
 /// Management of MAME data files, including downloading, reading, and unpacking.
 pub mod file_handling {
-    pub use crate::core::data_cleanup::machine_filtering::remove_machines_by_filter;
+    pub use crate::core::data_cleanup::machine_filtering::{
+        remove_machines_by_category, remove_machines_by_filter,
+    };
     pub use crate::core::file_handling::file_downloader::{download_file, download_files};
     pub use crate::core::file_handling::file_reader::{read_file, read_files};
     pub use crate::core::file_handling::file_unpacker::{unpack_file, unpack_files};
 }
 /// Data models and types used for MAME data processing.
 pub mod models {
+    pub use crate::core::data_cleanup::machine_filtering::Category;
     pub use crate::core::data_cleanup::machine_filtering::MachineFilter;
     pub use crate::core::models::core_models::*;
     pub use crate::core::models::mame_data_types::MameDataType;
