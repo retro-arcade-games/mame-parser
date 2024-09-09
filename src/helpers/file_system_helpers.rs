@@ -77,9 +77,11 @@ pub(crate) fn find_file_with_pattern(
 pub(crate) struct WorkspacePaths {
     pub download_path: &'static str,
     pub extract_path: &'static str,
+    pub export_path: &'static str,
 }
 
 pub(crate) const WORKSPACE_PATHS: WorkspacePaths = WorkspacePaths {
     download_path: "downloads",
     extract_path: "extracted",
+    export_path: "export",
 };

@@ -32,6 +32,7 @@ quick-xml = "0.23"
 lazy_static = "1.4"
 docify = "0.2.8"
 anyhow = "1.0.86"
+rusqlite = "0.32.1"
 
 [dev-dependencies]
 indicatif = "0.16"

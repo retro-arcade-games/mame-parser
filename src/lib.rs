@@ -35,11 +35,13 @@ pub mod file_handling {
     pub use crate::core::file_handling::file_downloader::{download_file, download_files};
     pub use crate::core::file_handling::file_reader::{read_file, read_files};
     pub use crate::core::file_handling::file_unpacker::{unpack_file, unpack_files};
+    pub use crate::core::file_handling::file_writer::write_files;
 }
 /// Data models and types used for MAME data processing.
 pub mod models {
     pub use crate::core::data_cleanup::machine_filtering::Category;
     pub use crate::core::data_cleanup::machine_filtering::MachineFilter;
+    pub use crate::core::file_handling::file_writer::ExportFileType;
     pub use crate::core::models::core_models::*;
     pub use crate::core::models::mame_data_types::MameDataType;
 }
