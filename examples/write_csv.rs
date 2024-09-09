@@ -98,9 +98,9 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
                         }
                     }
                 });
-            // Write the machines to a SQLite database
+            // Write the machines to CSV files
             let result = write_files(
-                ExportFileType::Sqlite,
+                ExportFileType::Csv,
                 workspace_path,
                 &machines,
                 progress_callback,

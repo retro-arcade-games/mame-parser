@@ -72,13 +72,25 @@ pub fn write_sqlite(
     });
 
     // Add relations
-    create_relations(&mut conn, &machines)?;
+    create_relations(&mut conn, &machines, &progress_callback)?;
 
     // Add languages relations
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Adding languages relations"),
+        callback_type: CallbackType::Info,
+    });
     extract_and_insert_languages(&mut conn, &machines)?;
     insert_machine_language_relationships(&mut conn)?;
 
     // Add players relations
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Adding players relations"),
+        callback_type: CallbackType::Info,
+    });
     extract_and_insert_players(&mut conn, &machines)?;
     insert_machine_player_relationships(&mut conn)?;
 
@@ -86,7 +98,7 @@ pub fn write_sqlite(
     progress_callback(ProgressInfo {
         progress: processed_count as u64,
         total: processed_count as u64,
-        message: format!("{} unpacked successfully", data_base_file),
+        message: format!("{} exported successfully", data_base_file),
         callback_type: CallbackType::Finish,
     });
 
@@ -344,9 +356,6 @@ fn create_database(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
-/**
- * Insert the given machine data into the database.
- */
 fn insert_machine_data(transaction: &Transaction, machine: &Machine) -> Result<()> {
     transaction.execute(
         "INSERT OR REPLACE INTO machines (
@@ -477,9 +486,6 @@ fn insert_machine_data(transaction: &Transaction, machine: &Machine) -> Result<(
     Ok(())
 }
 
-/**
- * Extract and insert the languages from the machines data.
- */
 fn extract_and_insert_languages(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
@@ -505,9 +511,6 @@ fn extract_and_insert_languages(
     Ok(())
 }
 
-/**
- * Insert the relationships between the machines and the languages.
- */
 fn insert_machine_language_relationships(conn: &mut Connection) -> Result<()> {
     let machine_languages: Vec<(i64, String)> = {
         let mut stmt = conn.prepare("SELECT id, languages FROM machines")?;
@@ -536,9 +539,6 @@ fn insert_machine_language_relationships(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
-/**
- * Extract and insert the players from the extended data.
- */
 fn extract_and_insert_players(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
@@ -565,9 +565,6 @@ fn extract_and_insert_players(
     Ok(())
 }
 
-/**
- * Insert the relationships between the machines and the players.
- */
 fn insert_machine_player_relationships(conn: &mut Connection) -> Result<()> {
     let machine_players: Vec<(i64, String)> = {
         let mut stmt = conn.prepare(
@@ -601,10 +598,18 @@ fn insert_machine_player_relationships(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
-/**
- * Create the relations between the machines and other entities.
- */
-fn create_relations(conn: &mut Connection, machines: &HashMap<String, Machine>) -> Result<()> {
+fn create_relations(
+    conn: &mut Connection,
+    machines: &HashMap<String, Machine>,
+    progress_callback: &ProgressCallback,
+) -> Result<()> {
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Creating relations"),
+        callback_type: CallbackType::Info,
+    });
+
     // Add categories
     conn.execute(
         "INSERT OR IGNORE INTO categories (name)
@@ -636,6 +641,12 @@ fn create_relations(conn: &mut Connection, machines: &HashMap<String, Machine>) 
          )",
         [],
     )?;
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Adding series"),
+        callback_type: CallbackType::Info,
+    });
     // Add series
     let mut series: Vec<String> = machines
         .values()
@@ -661,6 +672,12 @@ fn create_relations(conn: &mut Connection, machines: &HashMap<String, Machine>) 
          SET series_id = (SELECT id FROM series WHERE series.name = machines.series)",
         [],
     )?;
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Adding manufacturers"),
+        callback_type: CallbackType::Info,
+    });
     // Add manufacturers from extended data
     let mut manufacturers: Vec<String> = machines
         .values()
@@ -678,6 +695,12 @@ fn create_relations(conn: &mut Connection, machines: &HashMap<String, Machine>) 
         }
     }
     tx.commit()?;
+    progress_callback(ProgressInfo {
+        progress: 0,
+        total: 0,
+        message: format!("Updating machines relations"),
+        callback_type: CallbackType::Info,
+    });
     // Update machines with manufacturer_id
     conn.execute(
         "UPDATE machines
