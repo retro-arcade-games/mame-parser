@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    core::writers::{csv_writer, sqlite_writer},
+    core::writers::{csv_writer, json_writer, sqlite_writer},
     helpers::file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS},
     models::Machine,
     progress::ProgressCallback,
@@ -36,7 +36,13 @@ pub fn write_files(
                 progress_callback,
             )?;
         }
-        ExportFileType::Json => {}
+        ExportFileType::Json => {
+            json_writer::write_json(
+                &export_folder.as_path().to_string_lossy(),
+                &machines,
+                progress_callback,
+            )?;
+        }
         ExportFileType::Csv => {
             csv_writer::write_csv(
                 &export_folder.as_path().to_string_lossy(),
