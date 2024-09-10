@@ -1,13 +1,13 @@
 use crate::{
+    core::models::collections_helper::{
+        get_categories_list, get_languages_list, get_manufacturers_list, get_players_list,
+        get_series_list, get_subcategories_list,
+    },
     models::Machine,
     progress::{CallbackType, ProgressCallback, ProgressInfo},
 };
 use csv::Writer;
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fs::File,
-};
+use std::{collections::HashMap, error::Error, fs::File, io::Write};
 
 pub fn write_csv(
     export_path: &str,
@@ -284,15 +284,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    let mut manufacturers: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.manufacturer.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-    manufacturers.sort_unstable();
-
-    export_collection(manufacturers, export_path, "manufacturers", &["name"])?;
+    export_collection(
+        get_manufacturers_list(&machines),
+        export_path,
+        "manufacturers",
+        &["name", "machines"],
+        false,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: 0,
@@ -301,15 +299,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    let mut series: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.series.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-    series.sort_unstable();
-
-    export_collection(series, export_path, "series", &["name"])?;
+    export_collection(
+        get_series_list(&machines),
+        export_path,
+        "series",
+        &["name", "machines"],
+        false,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: 0,
@@ -318,15 +314,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    let mut languages: Vec<String> = machines
-        .values()
-        .flat_map(|machine| machine.languages.iter().cloned())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    languages.sort_unstable();
-    export_collection(languages, export_path, "languages", &["name"])?;
+    export_collection(
+        get_languages_list(&machines),
+        export_path,
+        "languages",
+        &["name", "machines"],
+        false,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: 0,
@@ -335,17 +329,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    let mut players: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.extended_data.as_ref()?.players.as_ref())
-        .flat_map(|players| players.split(',').map(|s| s.trim().to_string()))
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    players.sort_unstable();
-
-    export_collection(players, export_path, "players", &["name"])?;
+    export_collection(
+        get_players_list(&machines),
+        export_path,
+        "players",
+        &["name", "machines"],
+        false,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: 0,
@@ -354,16 +344,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    let mut categories: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.category.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    categories.sort_unstable();
-
-    export_collection(categories, export_path, "categories", &["name"])?;
+    export_collection(
+        get_categories_list(&machines),
+        export_path,
+        "categories",
+        &["name", "machines"],
+        false,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: 0,
@@ -372,7 +359,13 @@ pub fn write_csv(
         callback_type: CallbackType::Info,
     });
 
-    export_subcategories(export_path, &machines)?;
+    export_collection(
+        get_subcategories_list(&machines),
+        export_path,
+        "subcategories",
+        &["category", "subcategory", "machines"],
+        true,
+    )?;
 
     progress_callback(ProgressInfo {
         progress: processed_count as u64,
@@ -398,19 +391,20 @@ fn write_csv_header(wtr: &mut Writer<File>, headers: &[&str]) -> Result<(), csv:
     wtr.write_record(headers)
 }
 
-fn write_csv_record<W: std::io::Write>(
-    wtr: &mut Writer<W>,
-    fields: &[&str],
-) -> Result<(), csv::Error> {
+fn write_csv_record<W: Write>(wtr: &mut Writer<W>, fields: &[&str]) -> Result<(), csv::Error> {
     wtr.write_record(fields)
 }
 
 fn export_collection(
-    data: Vec<String>,
+    data: HashMap<String, usize>,
     export_path: &str,
     file_name: &str,
     headers: &[&str],
+    is_subcategory: bool,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let mut data_vec: Vec<(&String, &usize)> = data.iter().collect();
+    data_vec.sort_by_key(|&(name, _)| name);
+
     // Create the file path
     let file_path = format!("{}/{}.csv", export_path, file_name);
     let file = File::create(file_path)?;
@@ -419,52 +413,23 @@ fn export_collection(
     // Write the header
     wtr.write_record(headers)?;
 
-    // Write the data
-    for name in data {
-        wtr.write_record(&[name])?;
+    match is_subcategory {
+        true => {
+            for (name, count) in data_vec {
+                let splitted: Vec<&str> = name.split(" - ").collect();
+                let category = splitted[0];
+                let subcategory = splitted[1];
+                wtr.write_record(&[category, subcategory, &count.to_string()])?;
+            }
+        }
+        false => {
+            for (name, count) in data_vec {
+                wtr.write_record(&[name, &count.to_string()])?;
+            }
+        }
     }
 
     wtr.flush()?;
-
-    Ok(())
-}
-
-fn export_subcategories(
-    export_path: &str,
-    machines: &HashMap<String, Machine>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let mut subcategories: Vec<String> = machines
-        .values()
-        .filter_map(|machine| {
-            machine.category.as_ref().and_then(|category| {
-                machine
-                    .subcategory
-                    .as_ref()
-                    .map(|subcategory| format!("{} - {}", category, subcategory))
-            })
-        })
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    subcategories.sort_unstable();
-
-    // Subcategories writer
-    let subcategories_path = format!("{}/subcategories.csv", export_path);
-    let subcategories_file = File::create(subcategories_path)?;
-    let mut subcategories_wtr = Writer::from_writer(subcategories_file);
-
-    // Write the subcategories header
-    subcategories_wtr.write_record(&["category", "subcategory"])?;
-
-    for name in subcategories {
-        let splitted: Vec<&str> = name.split(" - ").collect();
-        let category = splitted[0];
-        let subcategory = splitted[1];
-        subcategories_wtr.write_record(&[category, subcategory])?;
-    }
-
-    subcategories_wtr.flush()?;
 
     Ok(())
 }
