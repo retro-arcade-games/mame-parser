@@ -3,6 +3,7 @@ use crate::{
         get_categories_list, get_languages_list, get_manufacturers_list, get_players_list,
         get_series_list, get_subcategories_list,
     },
+    helpers::callback_progress_helper::get_progress_info,
     models::Machine,
     progress::{CallbackType, ProgressCallback, ProgressInfo},
 };
@@ -19,12 +20,9 @@ pub fn write_csv(
         return Err("No machines data loaded, please read the data first.".into());
     }
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Writing csv files to {}", export_path),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Writing CSV files to {}", export_path).as_str(),
+    ));
 
     let total_elements = machines.len();
     let mut processed_count = 0;
@@ -277,13 +275,7 @@ pub fn write_csv(
     history_sections_wtr.flush()?;
     resources_wtr.flush()?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding manufacturers"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding manufacturers"));
     export_collection(
         get_manufacturers_list(&machines),
         export_path,
@@ -292,13 +284,7 @@ pub fn write_csv(
         false,
     )?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding series"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding series"));
     export_collection(
         get_series_list(&machines),
         export_path,
@@ -307,13 +293,7 @@ pub fn write_csv(
         false,
     )?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding languages"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding languages"));
     export_collection(
         get_languages_list(&machines),
         export_path,
@@ -322,13 +302,7 @@ pub fn write_csv(
         false,
     )?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding players"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding players"));
     export_collection(
         get_players_list(&machines),
         export_path,
@@ -337,13 +311,7 @@ pub fn write_csv(
         false,
     )?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding categories"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding categories"));
     export_collection(
         get_categories_list(&machines),
         export_path,
@@ -352,13 +320,7 @@ pub fn write_csv(
         false,
     )?;
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding subcategories"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Adding subcategories"));
     export_collection(
         get_subcategories_list(&machines),
         export_path,

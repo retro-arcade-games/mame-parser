@@ -1,7 +1,10 @@
+use crate::core::models::collections_helper::{
+    get_languages_list, get_manufacturers_list, get_players_list, get_series_list,
+};
 use crate::models::Machine;
 use crate::progress::{CallbackType, ProgressCallback, ProgressInfo};
 use rusqlite::{params, Connection, Result, Transaction};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
@@ -490,14 +493,9 @@ fn extract_and_insert_languages(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
 ) -> Result<()> {
-    let mut languages: Vec<String> = machines
-        .values()
-        .flat_map(|machine| machine.languages.iter().cloned())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    languages.sort_unstable();
+    let languages_hash = get_languages_list(&machines);
+    let mut languages: Vec<String> = languages_hash.keys().cloned().collect();
+    languages.sort();
 
     let tx = conn.transaction()?;
     {
@@ -543,15 +541,9 @@ fn extract_and_insert_players(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
 ) -> Result<()> {
-    let mut players: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.extended_data.as_ref()?.players.as_ref())
-        .flat_map(|players| players.split(',').map(|s| s.trim().to_string()))
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    players.sort_unstable();
+    let players_hash = get_players_list(&machines);
+    let mut players: Vec<String> = players_hash.keys().cloned().collect();
+    players.sort();
 
     let tx = conn.transaction()?;
     {
@@ -648,14 +640,9 @@ fn create_relations(
         callback_type: CallbackType::Info,
     });
     // Add series
-    let mut series: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.series.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    series.sort_unstable();
+    let series_hash = get_series_list(&machines);
+    let mut series: Vec<String> = series_hash.keys().cloned().collect();
+    series.sort();
 
     // let series = get_list(&SERIES);
     let tx = conn.transaction()?;
@@ -679,13 +666,9 @@ fn create_relations(
         callback_type: CallbackType::Info,
     });
     // Add manufacturers from extended data
-    let mut manufacturers: Vec<String> = machines
-        .values()
-        .filter_map(|machine| machine.manufacturer.clone())
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect();
-    manufacturers.sort_unstable();
+    let manufacturers_hash = get_manufacturers_list(&machines);
+    let mut manufacturers: Vec<String> = manufacturers_hash.keys().cloned().collect();
+    manufacturers.sort();
     let tx = conn.transaction()?;
     {
         let mut insert_stmt =
