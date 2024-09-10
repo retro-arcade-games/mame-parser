@@ -1,6 +1,9 @@
-use crate::core::models::{
-    callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
-    core_models::{HistorySection, Machine},
+use crate::{
+    core::models::{
+        callback_progress::{CallbackType, ProgressCallback, ProgressInfo},
+        core_models::{HistorySection, Machine},
+    },
+    helpers::callback_progress_helper::get_progress_info,
 };
 use anyhow::{Context, Result};
 use quick_xml::events::Event;
@@ -78,12 +81,9 @@ pub fn read_history_file(
     let data_file_name = file_path.split('/').last().unwrap();
 
     // Get total elements
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Getting total entries for {}", data_file_name),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Getting total entries for {}", data_file_name).as_str(),
+    ));
 
     let file =
         File::open(file_path).with_context(|| format!("Failed to open file: {}", file_path))?;
@@ -107,12 +107,9 @@ pub fn read_history_file(
         }
     };
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Reading {}", data_file_name),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Reading {}", data_file_name).as_str(),
+    ));
 
     let mut xml_reader = Reader::from_reader(reader);
     xml_reader.trim_text(true);

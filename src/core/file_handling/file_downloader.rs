@@ -1,10 +1,13 @@
-use crate::core::models::{
-    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
-    mame_data_types::{get_data_type_details, MameDataType},
-};
 use crate::helpers::{
     data_source_helper::{get_data_source, get_file_name_from_url},
     file_system_helpers::{ensure_folder_exists, WORKSPACE_PATHS},
+};
+use crate::{
+    core::models::{
+        callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+        mame_data_types::{get_data_type_details, MameDataType},
+    },
+    helpers::callback_progress_helper::get_progress_info,
 };
 use reqwest::blocking::Client;
 use std::error::Error;
@@ -64,12 +67,9 @@ pub fn download_file(
     let data_type_details = get_data_type_details(data_type);
 
     // Retrieves the URL for the data type.
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Searching URL for {}", data_type_details.name),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Searching URL for {}", data_type_details.name).as_str(),
+    ));
 
     let download_url =
         match get_data_source(&data_type_details.source, &data_type_details.source_match) {
@@ -90,12 +90,9 @@ pub fn download_file(
     let file_name = get_file_name_from_url(&download_url);
     let file_path = destination_folder.join(file_name.clone());
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Checking if file {} already exists", file_name.clone()),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Checking if file {} already exists", file_name).as_str(),
+    ));
 
     if Path::new(&file_path).exists() {
         progress_callback(ProgressInfo {
@@ -109,12 +106,9 @@ pub fn download_file(
     }
 
     // Downloads the file.
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Downloading {} file", data_type_details.name),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Downloading {} file", data_type_details.name).as_str(),
+    ));
 
     download(&download_url, &destination_folder, progress_callback)
 }

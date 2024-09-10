@@ -1,6 +1,7 @@
 use crate::core::models::collections_helper::{
     get_languages_list, get_manufacturers_list, get_players_list, get_series_list,
 };
+use crate::helpers::callback_progress_helper::get_progress_info;
 use crate::models::Machine;
 use crate::progress::{CallbackType, ProgressCallback, ProgressInfo};
 use rusqlite::{params, Connection, Result, Transaction};
@@ -32,13 +33,9 @@ pub fn write_sqlite(
 
     let total_elements = machines.len();
 
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Writing {}", data_base_path),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info(
+        format!("Writing {}", data_base_path).as_str(),
+    ));
     let mut processed_count = 0;
     let batch = 5000;
 
@@ -78,22 +75,12 @@ pub fn write_sqlite(
     create_relations(&mut conn, &machines, &progress_callback)?;
 
     // Add languages relations
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding languages relations"),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info("Adding languages relations"));
     extract_and_insert_languages(&mut conn, &machines)?;
     insert_machine_language_relationships(&mut conn)?;
 
     // Add players relations
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding players relations"),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info("Adding players relations"));
     extract_and_insert_players(&mut conn, &machines)?;
     insert_machine_player_relationships(&mut conn)?;
 
@@ -595,13 +582,7 @@ fn create_relations(
     machines: &HashMap<String, Machine>,
     progress_callback: &ProgressCallback,
 ) -> Result<()> {
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Creating relations"),
-        callback_type: CallbackType::Info,
-    });
-
+    progress_callback(get_progress_info("Creating relations"));
     // Add categories
     conn.execute(
         "INSERT OR IGNORE INTO categories (name)
@@ -633,12 +614,8 @@ fn create_relations(
          )",
         [],
     )?;
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding series"),
-        callback_type: CallbackType::Info,
-    });
+
+    progress_callback(get_progress_info("Adding series"));
     // Add series
     let series_hash = get_series_list(&machines);
     let mut series: Vec<String> = series_hash.keys().cloned().collect();
@@ -659,12 +636,8 @@ fn create_relations(
          SET series_id = (SELECT id FROM series WHERE series.name = machines.series)",
         [],
     )?;
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Adding manufacturers"),
-        callback_type: CallbackType::Info,
-    });
+
+    progress_callback(get_progress_info("Adding manufacturers"));
     // Add manufacturers from extended data
     let manufacturers_hash = get_manufacturers_list(&machines);
     let mut manufacturers: Vec<String> = manufacturers_hash.keys().cloned().collect();
@@ -678,12 +651,8 @@ fn create_relations(
         }
     }
     tx.commit()?;
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Updating machines relations"),
-        callback_type: CallbackType::Info,
-    });
+
+    progress_callback(get_progress_info("Updating machines relations"));
     // Update machines with manufacturer_id
     conn.execute(
         "UPDATE machines

@@ -1,9 +1,12 @@
-use crate::core::models::{
-    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
-    mame_data_types::{get_data_type_details, MameDataType},
-};
 use crate::helpers::file_system_helpers::{
     ensure_folder_exists, find_file_with_pattern, WORKSPACE_PATHS,
+};
+use crate::{
+    core::models::{
+        callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+        mame_data_types::{get_data_type_details, MameDataType},
+    },
+    helpers::callback_progress_helper::get_progress_info,
 };
 use sevenz_rust::Password;
 use std::error::Error;
@@ -66,15 +69,13 @@ pub fn unpack_file(
     }
 
     // Checks if file already unpacked
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!(
+    progress_callback(get_progress_info(
+        format!(
             "Checking if {} file already unpacked",
             data_type_details.name
-        ),
-        callback_type: CallbackType::Info,
-    });
+        )
+        .as_str(),
+    ));
 
     if let Ok(existing_data_file) = find_file_with_pattern(
         &extract_folder.to_str().unwrap(),
@@ -91,12 +92,9 @@ pub fn unpack_file(
     }
 
     // Checks if zip file is present
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!("Checking if {} zip file exists", data_type_details.name),
-        callback_type: CallbackType::Info,
-    });
+    progress_callback(get_progress_info(
+        format!("Checking if {} zip file exists", data_type_details.name).as_str(),
+    ));
 
     let download_folder = workspace_path.join(WORKSPACE_PATHS.download_path);
     let zip_file_path = find_file_with_pattern(
@@ -108,12 +106,10 @@ pub fn unpack_file(
         // Unpack the file
         Ok(zip_file_path) => {
             let zip_file = zip_file_path.split('/').last().unwrap();
-            progress_callback(ProgressInfo {
-                progress: 0,
-                total: 0,
-                message: format!("Unpacking {}", zip_file),
-                callback_type: CallbackType::Info,
-            });
+
+            progress_callback(get_progress_info(
+                format!("Unpacking {}", zip_file).as_str(),
+            ));
 
             let unpack_result = unpack(&zip_file_path, &extract_folder, &progress_callback);
 

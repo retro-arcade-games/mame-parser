@@ -1,9 +1,12 @@
-use crate::core::models::{
-    callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
-    core_models::Machine,
-    mame_data_types::{get_data_type_details, MameDataType},
-};
 use crate::helpers::file_system_helpers::{find_file_with_pattern, WORKSPACE_PATHS};
+use crate::{
+    core::models::{
+        callback_progress::{CallbackType, ProgressCallback, ProgressInfo, SharedProgressCallback},
+        core_models::Machine,
+        mame_data_types::{get_data_type_details, MameDataType},
+    },
+    helpers::callback_progress_helper::get_progress_info,
+};
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
@@ -57,15 +60,13 @@ pub fn read_file(
         .join(data_type_details.name.to_lowercase());
 
     // Checks if data file is present in the extract folder
-    progress_callback(ProgressInfo {
-        progress: 0,
-        total: 0,
-        message: format!(
+    progress_callback(get_progress_info(
+        format!(
             "Checking if data file for {} is present",
             data_type_details.name
-        ),
-        callback_type: CallbackType::Info,
-    });
+        )
+        .as_str(),
+    ));
 
     let existing_data_file = find_file_with_pattern(
         &extract_folder.to_str().unwrap(),
