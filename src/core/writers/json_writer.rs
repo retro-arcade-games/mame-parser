@@ -15,6 +15,39 @@ use std::{
     io::{BufWriter, Write},
 };
 
+/// Writes machine data to multiple JSON files for export.
+///
+/// This function exports the contents of a `HashMap` of `Machine` data to several JSON files.
+/// The main machine data is exported to a primary JSON file, while additional collections such as manufacturers, series, languages, players, categories, and subcategories are exported to separate JSON files.
+/// Progress updates are provided through a callback function.
+///
+/// # Parameters
+/// - `export_path`: A `&str` representing the directory path where the JSON files will be exported.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all machine data to be exported.
+///   The key is the machine name, and the value is a `Machine` struct with all associated metadata.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that provides progress updates during the JSON writing process.
+///   The callback receives a `ProgressInfo` struct containing fields like `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all JSON files to the specified `export_path`.
+/// - On failure: Returns an error if there are issues creating or writing to the JSON files.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The `machines` HashMap is empty, indicating that there is no data to write.
+/// - There are any I/O errors when creating or writing to the JSON files.
+/// - The progress callback fails to execute correctly during any phase of the writing process.
+///
+/// # JSON Files Created
+/// This function creates the following JSON files:
+/// - `machines.json`: Contains the main machine data, including metadata like name, source file, manufacturer, etc.
+/// - `manufacturers.json`: Contains a list of manufacturers and the machines associated with them.
+/// - `series.json`: Contains a list of game series and the machines associated with each series.
+/// - `languages.json`: Contains a list of languages and the machines available in each language.
+/// - `players.json`: Contains player information and the machines that support each player type.
+/// - `categories.json`: Contains a list of game categories and the machines that belong to each category.
+/// - `subcategories.json`: Contains subcategory data and the machines that belong to each subcategory.
 pub fn write_json(
     export_path: &str,
     machines: &HashMap<String, Machine>,
@@ -78,6 +111,35 @@ pub fn write_json(
     Ok(())
 }
 
+/// Exports machine data to a JSON file.
+///
+/// This function exports the contents of a `HashMap` of `Machine` data to a JSON file named `machines.json`.
+/// The machines are sorted by name, and each machine's metadata is formatted into a JSON object.
+/// The function uses a buffered writer to optimize file writing and provides progress updates via a callback function.
+///
+/// # Parameters
+/// - `export_path`: A `&str` representing the directory path where the `machines.json` file will be created.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all machine data to be exported.
+///   The key is the machine name, and the value is a `Machine` struct with all associated metadata.
+/// - `progress_callback`: A reference to a callback function of type `ProgressCallback` that provides progress updates during the JSON writing process.
+///   The callback receives a `ProgressInfo` struct containing fields like `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all machine data to the `machines.json` file.
+/// - On failure: Returns an error if there are issues creating or writing to the JSON file.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The `machines` HashMap is empty, indicating that there is no data to write.
+/// - There are any I/O errors when creating or writing to the `machines.json` file.
+/// - The progress callback fails to execute correctly during any phase of the writing process.
+///
+/// # JSON Structure
+/// The `machines.json` file contains an array of JSON objects, where each object represents a machine and includes:
+/// - Basic metadata: name, source file, manufacturer, etc.
+/// - Associated collections: BIOS sets, ROMs, device references, software, samples, history sections, and resources.
+/// - Extended data: additional normalized fields such as name, manufacturer, players, parent status, and year.
 fn export_machines_to_json(
     export_path: &str,
     machines: &HashMap<String, Machine>,
@@ -188,6 +250,24 @@ fn export_machines_to_json(
     Ok(())
 }
 
+/// Creates a file for writing JSON data.
+///
+/// This function creates a file with the specified name in the given export path, which will be used for writing JSON data.
+/// If the file does not exist, it will be created; if it does exist, its contents will be overwritten.
+///
+/// # Parameters
+/// - `export_path`: A `&str` representing the directory path where the JSON file should be created.
+/// - `file_name`: A `&str` representing the base name of the JSON file (without extension).
+///
+/// # Returns
+/// Returns a `Result<File, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains a `File` object that can be used to write JSON data.
+/// - On failure: Contains an error if the file cannot be created or there are issues with file access permissions.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be created due to permission issues or if the path is invalid.
+/// - There are I/O errors while creating the file.
 fn create_json_writer(
     export_path: &str,
     file_name: &str,
@@ -197,6 +277,33 @@ fn create_json_writer(
     Ok(file)
 }
 
+/// Exports a collection of data to a JSON file.
+///
+/// This function exports a `HashMap` containing data entries and their associated counts to a JSON file.
+/// The data can represent categories or subcategories, depending on the `is_subcategory` flag.
+/// The JSON file is created in the specified export path, and the data is written in a formatted JSON structure.
+///
+/// # Parameters
+/// - `data`: A `HashMap<String, usize>` where the key represents the name (category or subcategory), and the value is the count associated with that name.
+/// - `export_path`: A `&str` representing the directory path where the JSON file will be created.
+/// - `file_name`: A `&str` representing the base name of the JSON file (without extension).
+/// - `is_subcategory`: A `bool` indicating whether the data represents subcategories (`true`) or categories (`false`).
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all data to the JSON file.
+/// - On failure: Returns an error if there are issues creating or writing to the JSON file.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The JSON file cannot be created due to permission issues or an invalid path.
+/// - There are I/O errors while writing to the JSON file.
+/// - The data is improperly formatted or cannot be split correctly when `is_subcategory` is `true`.
+///
+/// # JSON Structure
+/// The JSON file contains an array of JSON objects:
+/// - If `is_subcategory` is `true`, each object includes a "category", "subcategory", and the associated "machines" count.
+/// - If `is_subcategory` is `false`, each object includes a "name" and the associated "machines" count.
 fn export_collection_to_json(
     data: HashMap<String, usize>,
     export_path: &str,

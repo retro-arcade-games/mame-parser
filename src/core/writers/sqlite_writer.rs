@@ -9,6 +9,36 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
+/// Writes machine data to a SQLite database.
+///
+/// This function exports the contents of a `HashMap` of `Machine` data to a SQLite database file.
+/// The function creates a new SQLite database at the specified path, inserts all machine data,
+/// and then establishes necessary relationships. Progress updates are provided through a callback function.
+///
+/// # Parameters
+/// - `data_base_path`: A `&str` representing the file path where the SQLite database will be created.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all machine data to be exported.
+///   The key is the machine name, and the value is a `Machine` struct with all associated metadata.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that provides progress updates during the SQLite writing process.
+///   The callback receives a `ProgressInfo` struct containing fields like `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all data to the SQLite database.
+/// - On failure: Returns an error if there are issues creating the database, writing data, or establishing relationships.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The `machines` HashMap is empty, indicating that there is no data to write.
+/// - There are any I/O errors when creating the SQLite database file.
+/// - The database connection or transactions fail during the writing process.
+/// - The progress callback fails to execute correctly during any phase of the writing process.
+///
+/// # SQLite Database Structure
+/// The SQLite database includes:
+/// - Tables for machine data, each containing relevant metadata like name, source file, manufacturer, etc.
+/// - Relationships between machines and additional attributes such as languages and players.
+/// - Data is inserted in batches to optimize performance and reduce memory usage.
 pub fn write_sqlite(
     data_base_path: &str,
     machines: &HashMap<String, Machine>,
@@ -95,9 +125,44 @@ pub fn write_sqlite(
     Ok(())
 }
 
-/**
- * Create the database and the required tables.
- */
+/// Creates the necessary tables in the SQLite database.
+///
+/// This function initializes the SQLite database by creating all the required tables for storing machine data,
+/// including tables for series, categories, subcategories, manufacturers, languages, players, and other related data.
+/// The tables are created only if they do not already exist, ensuring that existing data is not overwritten.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully creating all the necessary tables.
+/// - On failure: Returns an error if there is an issue executing any of the SQL statements to create the tables.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There is an I/O issue with the database file.
+/// - The SQL execution fails due to syntax errors or constraint violations.
+///
+/// # Tables Created
+/// - `series`: Stores series information with unique names.
+/// - `categories`: Stores category names with unique constraints.
+/// - `subcategories`: Stores subcategory names associated with categories.
+/// - `manufacturers`: Stores manufacturer names with unique constraints.
+/// - `languages`: Stores language names with unique constraints.
+/// - `players`: Stores player information with unique names.
+/// - `machines`: Stores main machine data, including references to series, categories, subcategories, and manufacturers.
+/// - `machine_languages`: Stores relationships between machines and languages.
+/// - `machine_players`: Stores relationships between machines and players.
+/// - `extended_data`: Stores additional normalized data for machines.
+/// - `bios_sets`: Stores BIOS set information linked to each machine.
+/// - `roms`: Stores ROM-specific data for each machine.
+/// - `device_refs`: Stores device reference data for each machine.
+/// - `softwares`: Stores software information linked to each machine.
+/// - `samples`: Stores sample data for each machine.
+/// - `disks`: Stores disk information for each machine.
+/// - `history_sections`: Stores historical sections related to each machine.
+/// - `resources`: Stores resource information such as size, type, and checksums for each machine.
 fn create_database(conn: &mut Connection) -> Result<()> {
     // Series table
     conn.execute(
@@ -346,6 +411,38 @@ fn create_database(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
+/// Inserts machine data into the SQLite database.
+///
+/// This function inserts all relevant data for a given `Machine` into the corresponding tables in the SQLite database.
+/// The function handles the insertion of main machine data, as well as related data such as extended data, BIOS sets, ROMs, device references, software, samples, disks, history sections, and resources.
+/// Existing entries are replaced if there are conflicts to ensure the data is up-to-date.
+///
+/// # Parameters
+/// - `transaction`: A reference to a `Transaction` object representing an active SQLite transaction.
+///   This transaction is used to perform multiple insertions atomically.
+/// - `machine`: A reference to a `Machine` struct containing all the data to be inserted into the database.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully inserting all machine data.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert operations.
+/// - The transaction encounters any I/O issues or other database errors.
+///
+/// # Inserted Data
+/// - `machines`: Inserts or replaces the main machine data.
+/// - `extended_data`: Inserts or replaces extended data associated with the machine.
+/// - `bios_sets`: Inserts or replaces BIOS set information linked to the machine.
+/// - `roms`: Inserts or replaces ROM-specific data for the machine.
+/// - `device_refs`: Inserts or replaces device references for the machine.
+/// - `softwares`: Inserts or replaces software information linked to the machine.
+/// - `samples`: Inserts or replaces sample data for the machine.
+/// - `disks`: Inserts or replaces disk information for the machine.
+/// - `history_sections`: Inserts or replaces historical sections related to the machine.
+/// - `resources`: Inserts or replaces resource information such as size, type, and checksums for the machine.
 fn insert_machine_data(transaction: &Transaction, machine: &Machine) -> Result<()> {
     transaction.execute(
         "INSERT OR REPLACE INTO machines (
@@ -476,6 +573,28 @@ fn insert_machine_data(transaction: &Transaction, machine: &Machine) -> Result<(
     Ok(())
 }
 
+/// Extracts languages from the machine data and inserts them into the SQLite database.
+///
+/// This function processes all the machines in the provided `HashMap` to extract a unique list of languages.
+/// It then inserts each language into the `languages` table in the SQLite database.
+/// If a language already exists in the table, the insertion is ignored to avoid duplication.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all the machine data, from which the languages will be extracted.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully inserting all unique languages into the database.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert operations.
+/// - The transaction encounters any I/O issues or other database errors.
+///
+/// # Inserted Data
+/// - `languages`: Inserts each unique language extracted from the machine data into the `languages` table.
 fn extract_and_insert_languages(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
@@ -496,6 +615,28 @@ fn extract_and_insert_languages(
     Ok(())
 }
 
+/// Inserts relationships between machines and languages into the SQLite database.
+///
+/// This function establishes relationships between machines and their associated languages in the `machine_languages` table.
+/// It queries the `machines` table to retrieve the machine IDs and their associated languages,
+/// then inserts a record for each machine-language pair. The insertion links each machine to the corresponding language ID from the `languages` table.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully inserting all machine-language relationships into the database.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert operations.
+/// - The transaction encounters any I/O issues or other database errors.
+/// - The SQL query fails to retrieve machine IDs or language names correctly.
+///
+/// # Inserted Data
+/// - `machine_languages`: Inserts records associating each machine with its respective languages in the `machine_languages` table.
 fn insert_machine_language_relationships(conn: &mut Connection) -> Result<()> {
     let machine_languages: Vec<(i64, String)> = {
         let mut stmt = conn.prepare("SELECT id, languages FROM machines")?;
@@ -524,6 +665,28 @@ fn insert_machine_language_relationships(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
+/// Extracts player information from the machine data and inserts it into the SQLite database.
+///
+/// This function processes all the machines in the provided `HashMap` to extract a unique list of player types.
+/// It then inserts each player type into the `players` table in the SQLite database.
+/// If a player type already exists in the table, the insertion is ignored to avoid duplication.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all the machine data, from which the player types will be extracted.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully inserting all unique player types into the database.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert operations.
+/// - The transaction encounters any I/O issues or other database errors.
+///
+/// # Inserted Data
+/// - `players`: Inserts each unique player type extracted from the machine data into the `players` table.
 fn extract_and_insert_players(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,
@@ -544,6 +707,28 @@ fn extract_and_insert_players(
     Ok(())
 }
 
+/// Inserts relationships between machines and players into the SQLite database.
+///
+/// This function establishes relationships between machines and their associated player types in the `machine_players` table.
+/// It queries the `machines` and `extended_data` tables to retrieve the machine IDs and their associated player types,
+/// then inserts a record for each machine-player pair. The insertion links each machine to the corresponding player ID from the `players` table.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully inserting all machine-player relationships into the database.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert operations.
+/// - The transaction encounters any I/O issues or other database errors.
+/// - The SQL query fails to retrieve machine IDs or player names correctly.
+///
+/// # Inserted Data
+/// - `machine_players`: Inserts records associating each machine with its respective player types in the `machine_players` table.
 fn insert_machine_player_relationships(conn: &mut Connection) -> Result<()> {
     let machine_players: Vec<(i64, String)> = {
         let mut stmt = conn.prepare(
@@ -577,6 +762,34 @@ fn insert_machine_player_relationships(conn: &mut Connection) -> Result<()> {
     Ok(())
 }
 
+/// Creates and updates relationships between different entities in the SQLite database.
+///
+/// This function establishes and updates various relationships between entities such as machines, categories, subcategories, series, and manufacturers.
+/// It performs multiple SQL operations to insert unique entries into the respective tables and updates foreign key references in the `machines` table and other related tables.
+/// Progress updates are provided through a callback function to indicate the progress of each operation.
+///
+/// # Parameters
+/// - `conn`: A mutable reference to a `Connection` representing the SQLite database connection.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all machine data for creating and updating relationships.
+/// - `progress_callback`: A reference to a callback function of type `ProgressCallback` that provides progress updates during the process of creating and updating relations.
+///
+/// # Returns
+/// Returns a `Result<()>`:
+/// - On success: Returns `Ok(())` after successfully creating and updating all relationships.
+/// - On failure: Returns an error if there are issues executing any of the SQL statements.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are SQL syntax errors or constraint violations during the insert or update operations.
+/// - The transaction encounters any I/O issues or other database errors.
+/// - The progress callback fails to execute correctly during any phase of the relationship creation process.
+///
+/// # Created and Updated Data
+/// - `categories`: Inserts unique categories from the `machines` table and updates machines with the corresponding `category_id`.
+/// - `subcategories`: Inserts unique subcategories associated with categories and updates machines with the corresponding `subcategory_id`.
+/// - `series`: Inserts unique series names and updates machines with the corresponding `series_id`.
+/// - `manufacturers`: Inserts unique manufacturer names from the `extended_data` and updates machines with the corresponding `manufacturer_id`.
+/// - Updates various tables (`bios_sets`, `roms`, `device_refs`, `softwares`, `samples`, `disks`, `history_sections`, `resources`) to link their records with the correct `machine_id`.
 fn create_relations(
     conn: &mut Connection,
     machines: &HashMap<String, Machine>,

@@ -12,7 +12,7 @@
 //!
 //! # Crate Contents
 //!
-//! * [`File handling`](file_handling) - Provides functions and utilities for downloading, unpacking, and reading MAME data files.
+//! * [`File handling`](file_handling) - Provides functions and utilities for downloading, unpacking, reading and writing MAME data files.
 //! * [`Progress tracking`](progress) - Contains tools and types for tracking and managing progress updates during operations.
 //! * [`Crate models`](models) - Defines data types and models used for representing MAME data.
 //! * [`Mame files readers`](readers) - Contains functions for reading and parsing different MAME data file formats.

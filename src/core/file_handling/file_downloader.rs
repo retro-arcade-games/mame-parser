@@ -197,7 +197,6 @@ pub fn download_files(
 /// - `total_bytes`: The total size of the file being downloaded (if available).
 /// - `status_message`: A status message, which is currently set to an empty string during the download process and updated upon completion.
 /// - `callback_type`: The type of callback, typically `CallbackType::Progress` to indicate ongoing progress, or other variants like `CallbackType::Finish` to signal completion or `CallbackType::Error` for errors.
-
 fn download(
     url: &str,
     destination_folder: &Path,

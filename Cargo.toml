@@ -8,7 +8,7 @@ description = "Library to read and write MAME files"
 license = "MIT"
 repository = "https://github.com/retro-arcade-games/mame-parser"
 documentation = "https://docs.rs/mame-parser"
-keywords = ["mame", "parser", "arcade", "rust"]
+keywords = ["mame", "parser", "arcade", "games", "retro"]
 categories = ["parsing", "games"]
 exclude = [
     ".gitignore",

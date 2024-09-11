@@ -10,6 +10,48 @@ use crate::{
 use csv::Writer;
 use std::{collections::HashMap, error::Error, fs::File, io::Write};
 
+/// Writes machine data to multiple CSV files for export.
+///
+/// This function writes the contents of a `HashMap` of `Machine` data to several CSV files,
+/// each representing different categories of information such as machines, ROMs, BIOS sets, device references, disks, software, samples, history sections, and resources.
+/// The data is exported to the specified path, and progress updates are provided through a callback function.
+///
+/// # Parameters
+/// - `export_path`: A `&str` representing the path where the CSV files will be exported.
+/// - `machines`: A reference to a `HashMap<String, Machine>` containing all machine data to be exported.
+///   The key is the machine name, and the value is a `Machine` struct with all associated metadata.
+/// - `progress_callback`: A callback function of type `ProgressCallback` that provides progress updates during the CSV writing process.
+///   The callback receives a `ProgressInfo` struct containing fields like `progress`, `total`, `message`, and `callback_type`.
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all CSV files to the specified `export_path`.
+/// - On failure: Returns an error if there are issues creating or writing to the CSV files.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The `machines` HashMap is empty, indicating that there is no data to write.
+/// - There are any I/O errors when creating or writing to the CSV files.
+/// - The progress callback fails to execute correctly during any phase of the writing process.
+///
+/// # CSV Files Created
+/// This function creates the following CSV files:
+/// - `machines.csv`: Contains the main machine data, including metadata like name, source file, manufacturer, etc.
+/// - `roms.csv`: Contains ROM-specific data for each machine.
+/// - `bios_sets.csv`: Contains BIOS set information linked to each machine.
+/// - `device_refs.csv`: Contains device reference data linked to each machine.
+/// - `disks.csv`: Contains disk information for each machine.
+/// - `softwares.csv`: Contains software information linked to each machine.
+/// - `samples.csv`: Contains sample data for each machine.
+/// - `history_sections.csv`: Contains historical information and sections for each machine.
+/// - `resources.csv`: Contains resource information such as size, type, and checksums for each machine.
+/// - `manufacturers.csv`: Contains a list of manufacturers and the machines associated with them.
+/// - `series.csv`: Contains a list of game series and the machines associated with each series.
+/// - `languages.csv`: Contains a list of languages and the machines available in each language.
+/// - `players.csv`: Contains player information and the machines that support each player type.
+/// - `categories.csv`: Contains a list of game categories and the machines that belong to each category.
+/// - `subcategories.csv`: Contains subcategory data and the machines that belong to each subcategory.
+///
 pub fn write_csv(
     export_path: &str,
     machines: &HashMap<String, Machine>,
@@ -339,6 +381,25 @@ pub fn write_csv(
     Ok(())
 }
 
+/// Creates a CSV writer for a specific file.
+///
+/// This function creates a CSV writer for a file with the specified name, located in the given export path.
+/// The writer is set up to handle outputting data in CSV format to the created file.
+/// If the file does not exist, it will be created; if it does exist, its contents will be overwritten.
+///
+/// # Parameters
+/// - `export_path`: A `&str` representing the directory path where the CSV file should be created.
+/// - `file_name`: A `&str` representing the base name of the CSV file (without extension) to be created.
+///
+/// # Returns
+/// Returns a `Result<Writer<File>, Box<dyn Error + Send + Sync>>`:
+/// - On success: Contains a `Writer<File>` that can be used to write data to the specified CSV file.
+/// - On failure: Contains an error if the file cannot be created or there are issues with file access permissions.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The file cannot be created due to permission issues or if the path is invalid.
+/// - There are I/O errors while creating the file or initializing the writer.
 fn create_writer(
     export_path: &str,
     file_name: &str,
@@ -349,14 +410,73 @@ fn create_writer(
     Ok(writer)
 }
 
+/// Writes a header row to a CSV file.
+///
+/// This function writes the provided header fields to the beginning of a CSV file using the given CSV writer.
+/// The headers define the columns of the CSV file, providing structure to the data that follows.
+///
+/// # Parameters
+/// - `wtr`: A mutable reference to a `Writer<File>` representing the CSV writer where the headers will be written.
+/// - `headers`: A slice of `&str` containing the header fields to be written to the CSV file.
+///
+/// # Returns
+/// Returns a `Result<(), csv::Error>`:
+/// - On success: Returns `Ok(())` after successfully writing the header row.
+/// - On failure: Returns a `csv::Error` if there is an issue writing the header to the CSV file.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are I/O issues while writing to the CSV file.
+/// - The CSV writer encounters an internal error while processing the headers.
 fn write_csv_header(wtr: &mut Writer<File>, headers: &[&str]) -> Result<(), csv::Error> {
     wtr.write_record(headers)
 }
 
+/// Writes a data record to a CSV file.
+///
+/// This function writes a row of data fields to a CSV file using the provided CSV writer.
+/// Each field corresponds to a column in the CSV file, maintaining the order defined by the headers.
+///
+/// # Parameters
+/// - `wtr`: A mutable reference to a `Writer<W>` where `W` implements `Write`. This represents the CSV writer that will be used to write the record.
+/// - `fields`: A slice of `&str` containing the data fields to be written as a single row in the CSV file.
+///
+/// # Returns
+/// Returns a `Result<(), csv::Error>`:
+/// - On success: Returns `Ok(())` after successfully writing the data record.
+/// - On failure: Returns a `csv::Error` if there is an issue writing the data record to the CSV file.
+///
+/// # Errors
+/// This function will return an error if:
+/// - There are I/O issues while writing to the CSV file.
+/// - The CSV writer encounters an internal error while processing the data record.
 fn write_csv_record<W: Write>(wtr: &mut Writer<W>, fields: &[&str]) -> Result<(), csv::Error> {
     wtr.write_record(fields)
 }
 
+/// Exports a collection of data to a CSV file.
+///
+/// This function exports a `HashMap` containing data entries and their associated counts to a CSV file.
+/// The data can represent categories or subcategories, depending on the `is_subcategory` flag.
+/// The file is created in the specified export path, and headers are written before the data rows.
+///
+/// # Parameters
+/// - `data`: A `HashMap<String, usize>` where the key represents the name (category or subcategory), and the value is the count associated with that name.
+/// - `export_path`: A `&str` representing the directory path where the CSV file will be created.
+/// - `file_name`: A `&str` representing the base name of the CSV file (without extension).
+/// - `headers`: A slice of `&str` containing the header fields to be written to the CSV file.
+/// - `is_subcategory`: A `bool` indicating whether the data represents subcategories (`true`) or categories (`false`).
+///
+/// # Returns
+/// Returns a `Result<(), Box<dyn Error + Send + Sync>>`:
+/// - On success: Returns `Ok(())` after successfully writing all data to the CSV file.
+/// - On failure: Returns an error if there are issues creating or writing to the CSV file.
+///
+/// # Errors
+/// This function will return an error if:
+/// - The CSV file cannot be created due to permission issues or an invalid path.
+/// - There are I/O errors while writing to the CSV file.
+/// - The data is improperly formatted or cannot be split correctly when `is_subcategory` is `true`.
 fn export_collection(
     data: HashMap<String, usize>,
     export_path: &str,
