@@ -33,7 +33,7 @@
 - **File Downloading**: Download the latest MAME-related files and store them in a specified location.
 - **File Decompression**: Decompress downloaded files automatically, supporting multiple archive formats such as ZIP and 7z.
 - **Data Parsing and Management**: Parse MAME data files with utilities for reading and processing information in-memory.
-<!-- - **Multi-format Exporting**: Export parsed data to various formats, including JSON, CSV, and SQLite. -->
+- **Multi-format Exporting**: Export parsed data to various formats, including JSON, CSV, and SQLite.
 - **Progress Tracking**: Monitor the progress of operations.
 
 ## Library Contents
@@ -44,8 +44,11 @@
 - **`download_files`**: Downloads multiple MAME data files concurrently, providing progress tracking across multiple threads.
 - **`unpack_file`**: Unpacks a single downloaded file from its archive format (e.g., ZIP or 7z) to a specified folder.
 - **`unpack_files`**: Unpacks multiple files concurrently, allowing for efficient decompression with progress tracking.
-- **`read_file`**: Reads a single data file and returns a Hashmap with the information.
-- **`read_files`**: Reads multiple data files concurrently and returns a Hashmap with the information.
+- **`read_file`**: Reads a single data file and returns a `HashMap` with the information.
+- **`read_files`**: Reads multiple data files concurrently and returns a `HashMap` with the information.
+- **`filter_machines_by_category`**: Filters machines based on a specific category, removing all machines that do not match the given category.
+- **`filter_machines_by_filters`**: Applies multiple filters to the machines, such as removing non-game machines, BIOS machines, mechanical machines, device machines, clones, or modified machines.
+- **`write_files`**: Writes machine data to the desired format (SQLite, JSON, or CSV), establishing all necessary relationships and providing progress updates.
 
 ### Progress Tracking
 
@@ -65,10 +68,10 @@ Add `mame-parser` as a dependency in your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-mame-parser = "0.5.0"
+mame-parser = "0.7.0"
 ```
 
-Make sure to replace `"0.5.0"` with the actual version of `mame-parser` that you intend to use.
+Make sure to replace `"0.7.0"` with the actual version of `mame-parser` that you intend to use.
 
 ### 2. Download file example
 
