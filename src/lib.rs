@@ -47,11 +47,11 @@ pub mod models {
 
     pub mod collections {
         pub use crate::core::models::collections_helper::get_categories_list;
-        pub use crate::core::models::collections_helper::get_subcategories_list;
-        pub use crate::core::models::collections_helper::get_manufacturers_list;
-        pub use crate::core::models::collections_helper::get_series_list;
-        pub use crate::core::models::collections_helper::get_players_list;
         pub use crate::core::models::collections_helper::get_languages_list;
+        pub use crate::core::models::collections_helper::get_manufacturers_list;
+        pub use crate::core::models::collections_helper::get_players_list;
+        pub use crate::core::models::collections_helper::get_series_list;
+        pub use crate::core::models::collections_helper::get_subcategories_list;
     }
 }
 
