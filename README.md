@@ -46,8 +46,8 @@
 - **`unpack_files`**: Unpacks multiple files concurrently, allowing for efficient decompression with progress tracking.
 - **`read_file`**: Reads a single data file and returns a `HashMap` with the information.
 - **`read_files`**: Reads multiple data files concurrently and returns a `HashMap` with the information.
-- **`filter_machines_by_category`**: Filters machines based on a specific category, removing all machines that do not match the given category.
-- **`filter_machines_by_filters`**: Applies multiple filters to the machines, such as removing non-game machines, BIOS machines, mechanical machines, device machines, clones, or modified machines.
+- **`remove_machines_by_category`**: Filters machines based on a specific category, removing all machines that do not match the given category.
+- **`remove_machines_by_filter`**: Applies multiple filters to the machines, such as removing non-game machines, BIOS machines, mechanical machines, device machines, clones, or modified machines.
 - **`write_files`**: Writes machine data to the desired format (SQLite, JSON, or CSV), establishing all necessary relationships and providing progress updates.
 
 ### Progress Tracking
