@@ -44,7 +44,17 @@ pub mod models {
     pub use crate::core::file_handling::file_writer::ExportFileType;
     pub use crate::core::models::core_models::*;
     pub use crate::core::models::mame_data_types::MameDataType;
+
+    pub mod collections {
+        pub use crate::core::models::collections_helper::get_categories_list;
+        pub use crate::core::models::collections_helper::get_subcategories_list;
+        pub use crate::core::models::collections_helper::get_manufacturers_list;
+        pub use crate::core::models::collections_helper::get_series_list;
+        pub use crate::core::models::collections_helper::get_players_list;
+        pub use crate::core::models::collections_helper::get_languages_list;
+    }
 }
+
 /// Module for reading and parsing MAME data files.
 pub mod readers {
     pub use crate::core::readers::catver_reader::read_catver_file;
