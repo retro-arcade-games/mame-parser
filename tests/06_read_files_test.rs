@@ -33,7 +33,7 @@ mod tests {
                     }
                     CallbackType::Error => {
                         panic!(
-                            "Error during unpacking for {:?}: {}",
+                            "Error during reading for {:?}: {}",
                             data_type, progress_info.message
                         );
                     }
@@ -50,7 +50,7 @@ mod tests {
                 assert!(machines.len() > 0, "Machines is empty");
             }
             Err(e) => {
-                panic!("Error during unpacking: {}", e);
+                panic!("Error during reading: {}", e);
             }
         }
 

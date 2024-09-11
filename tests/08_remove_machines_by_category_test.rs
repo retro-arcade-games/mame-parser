@@ -29,7 +29,7 @@ mod tests {
                     assert!(progress_info.progress == progress_info.total);
                 }
                 CallbackType::Error => {
-                    panic!("Error during unpacking: {}", progress_info.message);
+                    panic!("Error during reading: {}", progress_info.message);
                 }
             }
         });

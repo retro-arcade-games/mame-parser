@@ -29,7 +29,7 @@ mod tests {
                     assert!(progress_info.progress == progress_info.total);
                 }
                 CallbackType::Error => {
-                    panic!("Error during unpacking: {}", progress_info.message);
+                    panic!("Error during reading: {}", progress_info.message);
                 }
             }
         });
@@ -43,7 +43,7 @@ mod tests {
                 assert!(machines.len() > 0, "Machines is empty");
             }
             Err(e) => {
-                panic!("Error during unpacking: {}", e);
+                panic!("Error during reading: {}", e);
             }
         }
 
