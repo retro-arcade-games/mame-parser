@@ -1,6 +1,6 @@
 [package]
 name = "mame-parser"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Ruben Sosenke <rsosenke@gmail.com>"]
 edition = "2021"
 readme = "README.md"
